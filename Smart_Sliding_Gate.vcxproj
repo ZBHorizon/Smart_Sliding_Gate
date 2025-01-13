@@ -71,9 +71,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MotorClassMain.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\wiringPi.h" />
-  </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

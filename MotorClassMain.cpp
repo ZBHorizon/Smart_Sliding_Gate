@@ -89,7 +89,7 @@ public:
     void softStop()
     {
         while (currentPwmValue_ != 0) {
-            currentPwmValue_ += currentPwmValue_ < 0) ? 1 : -1;
+            currentPwmValue_ += (currentPwmValue_ < 0) ? 1 : -1;
             pwmWrite(kPwmPin, std::abs(currentPwmValue_));
             delay(kStopRampMs);
         }
