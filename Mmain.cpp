@@ -144,7 +144,6 @@ void setMotorSpeed(int speed) {
         }
         pwmWrite(PWM_PIN, abs(current_speed));
         delay(start_ramp); // Sanftes Übergangsverhalten
-        }
     }
 }
 
