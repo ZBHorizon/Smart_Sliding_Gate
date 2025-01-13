@@ -9,13 +9,6 @@
 1. [Overview](#overview)
 2. [Features](#features)
 3. [Hardware Requirements](#hardware-requirements)
-4. [Software Requirements](#software-requirements)
-5. [Installation & Setup](#installation--setup)
-6. [Usage](#usage)
-7. [Project Structure](#project-structure)
-8. [License](#license)
-9. [Future Plans](#future-plans)
-10. [Contributing](#contributing)
 
 ---
 
@@ -37,10 +30,10 @@ and potentially sensor-based obstacle detection.
 - **End Stops**: Automatic detection of left/right end switches, halting the motor if triggered.
 - **Button Press Logic**: Simple open/close toggles, including logic for toggling between open/stop/close.
 - **WiringPi** usage for GPIO and hardware PWM.
-- **Planned**:
-  - Smart Home integration (MQTT, etc.)
-  - Position control (e.g., partial opening).
-  - Obstacle detection or safety sensor inputs.
+- Smart Home integration (MQTT, etc.)
+- Position control (e.g., partial opening).
+- Obstacle detection or safety sensor inputs.
+...
 
 ---
 
@@ -53,21 +46,5 @@ and potentially sensor-based obstacle detection.
 - **Buttons** for manual open/close (optional).
 - **Power supply** capable of handling motor current peaks.
 
-**Wiring Diagram** (an example diagram might be placed under `docs/wiring_diagram.png` or `docs/architecture_overview.md`).
 
----
 
-## Software Requirements
-
-1. **wiringPi** (make sure you have a version that works with your Raspberry Pi OS).
-2. **C++17 or newer** (recommended).
-3. **Optional**: CMake if you want a more robust build system. The code can also be compiled with a simple g++ command.
-
----
-
-## Installation & Setup
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/YourUserName/Smart_Sliding_Gate.git
-   cd Smart_Sliding_Gate
