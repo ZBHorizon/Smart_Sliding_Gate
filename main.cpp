@@ -8,7 +8,8 @@
 #define	LED	17
 
 int main(void)
-{
+{	
+
 	wiringPiSetupSys();
 
 	pinMode(LED, OUTPUT);

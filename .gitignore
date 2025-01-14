@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignoriere alle Dateien und Unterordner im include-Ordner
+include/*
+
+# Whiteliste bestimmte Dateien
+!include/wiringPi.h

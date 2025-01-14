@@ -49,6 +49,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <IncludePath>C:\Users\noaht\source\repos\Smart_Sliding_Gate\include</IncludePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <IncludePath>C:\Users\noaht\source\repos\Smart_Sliding_Gate\include;C:\Users\noaht\source\repos\Smart_Sliding_Gate</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
       <LibraryDependencies>wiringPi</LibraryDependencies>
@@ -68,10 +71,15 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="awdawDW.cpp" />
     <ClCompile Include="bastis_changes.cpp" />
+    <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mmain.cpp" />
     <ClCompile Include="MotorClassMain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Initialize.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>

@@ -1,6 +1,6 @@
 //! @file main.cpp
 //! @author Noah
-//! Test-Code fÃ¼r eine Torsteuerung mit VorwÃ¤rts- und RÃ¼ckwÃ¤rtsfunktion,
+//! Test-Code für eine Torsteuerung mit Vorwärts- und Rückwärtsfunktion,
 //! Endschalterauswertung und sanftem Beschleunigen/Abbremsen.
 //! @version 0.2
 //! @date 2025-01-12
@@ -9,11 +9,11 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <thread>
+#include <Initialize.h>
 #include <wiringPi.h>
 
-
-
-using namespace std::chrono::literals;
+using namespace std::chrono_literals;
 
 namespace Noah::Engineering {
 struct Pins {
@@ -22,12 +22,12 @@ struct Pins {
   static constexpr int LEFT_END  = 21;  // Left End Switch
   static constexpr int RIGHT_END = 22;  // Right End Switch
   static constexpr int OPEN      = 3;   // Open Remote Button
-  static constexpr int Close     = 2;   // Close Remote Button
+  static constexpr int CLOSE     = 2;   // Close Remote Button
 };
 
 struct RampDelays {
-  static constexpr std::chrono::millisecond START_DURATION = 5ms;
-  static constexpr std::chrono::millisecond STOP_DURATION  = 4ms;
+  static constexpr std::chrono::milliseconds START_DURATION = 5ms;
+  static constexpr std::chrono::milliseconds STOP_DURATION  = 4ms;
 };
 
 class Motor {
@@ -35,6 +35,14 @@ class Motor {
   /*//////// Public Interface ////////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
 public:
+  /* Types */
+  /*------------------------------------------------------------------------------------------------------------------*/
+  enum class Status {
+    NONE,
+    LEFT_BLOCKED,
+    RIGHT_BLOCKED,
+  };
+
   /* Constructors / Destructor */
   /*------------------------------------------------------------------------------------------------------------------*/
   Motor()             = default;
@@ -60,7 +68,7 @@ public:
     }
 
     // PWM-Pin konfigurieren
-    pinMode(Pins::PWM_PIN, PWM_OUTPUT);
+    pinMode(Pins::PWM, PWM_OUTPUT);
     pwmSetMode(PWM_MODE_MS);
     pwmSetRange(1024);
     pwmSetClock(1);
@@ -68,7 +76,7 @@ public:
     // Richtungspin konfigurieren
     pinMode(Pins::DIRECTION, OUTPUT);
 
-    // Endschalter-Pins als EingÃƒâ‚¬nge, mit Pull-ups
+    // Endschalter-Pins als Eingänge, mit Pull-ups
     pinMode(Pins::LEFT_END, INPUT);
     pinMode(Pins::RIGHT_END, INPUT);
     pullUpDnControl(Pins::LEFT_END, PUD_UP);
@@ -76,39 +84,42 @@ public:
 
     // Taster-Pins
     pinMode(Pins::OPEN, INPUT);
-    pinMode(Pins::Close, INPUT);
+    pinMode(Pins::CLOSE, INPUT);
     pullUpDnControl(Pins::OPEN, PUD_UP);
-    pullUpDnControl(Pins::Close, PUD_UP);
+    pullUpDnControl(Pins::CLOSE, PUD_UP);
 
     // Interrupts einrichten
     wiringPiISR(Pins::LEFT_END, INT_EDGE_BOTH, &Motor::OnIsrLeftEndStopped);
-    wiringPiISR(Pins::RIGHT_END, INT_EDGE_BOTH, &Motor::onIsrRightEndStopped);
+    wiringPiISR(Pins::RIGHT_END, INT_EDGE_BOTH, &Motor::OnIsrRightEndStopped);
   }
 
   void StopHard() {
-    pwmWrite(Pins::PWM_PIN, 0);
+    pwmWrite(Pins::PWM, 0);
     _currentPwmValue = 0;
   }
 
   void StopSlowly() {
     while (_currentPwmValue != 0) {
       _currentPwmValue += (_currentPwmValue < 0) ? 1 : -1;
-      pwmWrite(Pins::PWM_PIN, std::abs(_currentPwmValue));
+      pwmWrite(Pins::PWM, std::abs(_currentPwmValue));
       std::this_thread::sleep_for(RampDelays::STOP_DURATION);
     }
-    pwmWrite(Pins::PWM_PIN, 0);
-    digitalWrite(Pins::DIRECTION, LOW); // optionales ZurÃƒÅ’cksetzen der Richtung
+    pwmWrite(Pins::PWM, 0);
+    digitalWrite(Pins::DIRECTION, LOW); // optionales Zurücksetzen der Richtung
   }
 
   //! Setzt die Motorgeschwindigkeit mit sanftem Hoch-/Runterfahren.
-  //! @param speed GewÃƒÅ’nschte Geschwindigkeit (-1023 bis +1023).
-  //!              < 0 => rÃƒÅ’ckwÃƒâ‚¬rts, > 0 => vorwÃƒâ‚¬rts, == 0 => stop.
+  //! @param speed Gewünschte Geschwindigkeit (-1023 bis +1023).
+  //!              < 0 => rückwärts, > 0 => vorwärts, == 0 => stop.
   void UpdateSpeed(int speed) {
-    // Endschalter-Blockade prÃƒÅ’fen:
+    // Endschalter-Blockade prüfen:
     if (speed > 0 && _endStopStatus == Status::LEFT_BLOCKED) return;
     if (speed < 0 && _endStopStatus == Status::RIGHT_BLOCKED) return;
 
-    if (speed == 0) return StopSlowly();
+    if (speed == 0) {
+      StopSlowly();
+      return;
+    }
 
     // Motor in kleinen Schritten hoch- oder runterfahren
     while (_currentPwmValue != speed) {
@@ -120,7 +131,7 @@ public:
       if (_currentPwmValue == 0) digitalWrite(Pins::DIRECTION, (speed >= 0) ? LOW : HIGH);
 
       // PWM-Wert setzen (nur Betrag)
-      pwmWrite(Pins::PWM_PIN, std::abs(_currentPwmValue));
+      pwmWrite(Pins::PWM, std::abs(_currentPwmValue));
       std::this_thread::sleep_for(RampDelays::START_DURATION);
     }
   }
@@ -141,31 +152,23 @@ public:
   /*//////// Events //////////////////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
 private:
-  /* Types */
-  /*------------------------------------------------------------------------------------------------------------------*/
-  enum class Status {
-    NONE,
-    LEFT_BLOCKED,
-    RIGHT_BLOCKED,
-  };
-
-
   /* ISR */
   /*------------------------------------------------------------------------------------------------------------------*/
-  static void OnIsrLeftEndStopped() {
-    auto& motor = Get();
+    
+    static void OnIsrLeftEndStopped() {
+    auto& motor = Motor::Get();
     if (digitalRead(Pins::LEFT_END) == LOW) {
       motor._endStopStatus = Status::LEFT_BLOCKED;
-      stopMotor();
+      motor.StopHard();
     } else {
       motor._endStopStatus = Status::NONE;
     }
   }
   static void OnIsrRightEndStopped() {
-    auto& motor = Get();
+    auto& motor = Motor::Get();
     if (digitalRead(Pins::RIGHT_END) == LOW) {
         motor._endStopStatus = Status::RIGHT_BLOCKED;
-        stopMotor();
+        motor.StopHard();
     } else {
         motor._endStopStatus = Status::NONE;
     }
@@ -178,7 +181,7 @@ private:
 private:
   /* Variables */
   /*------------------------------------------------------------------------------------------------------------------*/
-  int _currentPwmValue = 0; // negativ - backwards | positiv - forwards
+  int _currentPwmValue = 0; // negativ - rückwärts | positiv - vorwärts
 
   std::atomic<Status> _endStopStatus { Status::NONE };
 };
@@ -189,10 +192,19 @@ private:
 // Hauptprogramm
 // --------------------------------------------------
 int main() {
+    using namespace Noah::Engineering;
+    using namespace std::chrono_literals;
+
     // Motor Initialisieren
     auto& motor = Motor::Get();
     motor.Initialize();
-
+    /*
+	/Intterrups einrichten
+    // Attach Interrupts (Replace nullptr with actual ISR functions)
+    wiringPiISR(ControlSystem::Pin::LEFT_END, INT_EDGE_RISING, OnIsrLeftEndStopped());
+    wiringPiISR(ControlSystem::Pin::RIGHT_END, INT_EDGE_RISING, OnIsrRightEndStopped());
+    wiringPiISR(ControlSystem::Pin::LIGHT_Barrier, INT_EDGE_RISING, nullptr);
+    */
     while (true) {
       enum class Action {
         NONE,
@@ -201,23 +213,23 @@ int main() {
       };
       static constexpr std::chrono::milliseconds DEBOUNCE_DELAY_DURATION = 200ms;
 
-      // Check Requested Action
+      // Überprüfen der angeforderten Aktion
 
-      auto action = Action::NONE;
+      Action action = Action::NONE;
       if (digitalRead(Pins::OPEN) == LOW) {
-        action = (action == Action::OPEN) ? Action::NONE : Action::OPEN; // switch
+        action = (action == Action::OPEN) ? Action::NONE : Action::OPEN; // Umschalten
         std::this_thread::sleep_for(DEBOUNCE_DELAY_DURATION);
       }
-      else if (digitalRead(Pins::Close) == LOW) {
-        action = (action == Action::CLOSE) ? Action::NONE : Action::CLOSE; // switch
+      else if (digitalRead(Pins::CLOSE) == LOW) {
+        action = (action == Action::CLOSE) ? Action::NONE : Action::CLOSE; // Umschalten
         std::this_thread::sleep_for(DEBOUNCE_DELAY_DURATION);
       }
 
-      // Execute
+      // Ausführen
       switch (action) {
         case Action::OPEN:  motor.UpdateSpeed(1000);  break;
         case Action::CLOSE: motor.UpdateSpeed(-1000); break;
-        default:            motor.StopSlowly();         break;
+        default:            motor.StopSlowly();       break;
       }
 
       std::this_thread::sleep_for(10ms); // Minimale Wartezeit, um CPU-Last zu schonen
