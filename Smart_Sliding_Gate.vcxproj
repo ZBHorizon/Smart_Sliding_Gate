@@ -71,15 +71,17 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="awdawDW.cpp" />
-    <ClCompile Include="bastis_changes.cpp" />
+    <ClCompile Include="config_manager.cpp" />
+    <ClCompile Include="Fixed  Bastis Changes.cpp" />
     <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Mmain.cpp" />
-    <ClCompile Include="MotorClassMain.cpp" />
+    <ClCompile Include="Motor.cpp" />
+    <ClCompile Include="Old main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="config_manager.h" />
     <ClInclude Include="Initialize.h" />
+    <ClInclude Include="Motor.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>

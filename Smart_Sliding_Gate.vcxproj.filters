@@ -2,13 +2,15 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MotorClassMain.cpp" />
-    <ClCompile Include="bastis_changes.cpp" />
-    <ClCompile Include="Mmain.cpp" />
-    <ClCompile Include="awdawDW.cpp" />
+    <ClCompile Include="Old main.cpp" />
+    <ClCompile Include="Fixed  Bastis Changes.cpp" />
     <ClCompile Include="Initialize.cpp" />
+    <ClCompile Include="Motor.cpp" />
+    <ClCompile Include="config_manager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Initialize.h" />
+    <ClInclude Include="Motor.h" />
+    <ClInclude Include="config_manager.h" />
   </ItemGroup>
 </Project>
