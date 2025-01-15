@@ -39,7 +39,7 @@ and potentially sensor-based obstacle detection.
 
 ## Hardware Requirements
 
-- **Raspberry Pi** (tested with e.g. Raspberry Pi 3/4; wiringPi installed).
+- **Raspberry Pin 4/5** .
 - **Motor driver board** (supports PWM + direction control).
 - **Sliding gate motor** rated for the driver board.
 - **Two end-stop switches** for detecting full open/close positions.
