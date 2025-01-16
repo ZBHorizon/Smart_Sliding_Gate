@@ -1,10 +1,11 @@
-#include "Initialize.h"
+#include <Initialize.hpp>
 #include <iostream>
 #include <cstdlib>
 
 
-namespace ControlSystem {
-    void InitializeGPIO() {
+namespace SlidingGate {
+    void Pin::Manager::InitializeGPIO() {
+		
         // Initialize WiringPi
         if (wiringPiSetup() == -1) {
             std::cerr << "Failed to initialize WiringPi.\n";

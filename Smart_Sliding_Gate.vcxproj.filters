@@ -6,12 +6,11 @@
     <ClCompile Include="---Fixed  Bastis Changes.cpp" />
     <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="Motor.cpp" />
-    <ClCompile Include="config_manager.cpp" />
-    <ClCompile Include="Event_handler.cpp" />
+    <ClCompile Include="Event_handler.hpp" />
+    <ClCompile Include="Test_event.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Initialize.h" />
-    <ClInclude Include="Motor.h" />
-    <ClInclude Include="config_manager.h" />
+    <ClInclude Include="Initialize.hpp" />
+    <ClInclude Include="Motor.hpp" />
   </ItemGroup>
 </Project>

@@ -1,4 +1,13 @@
-namespace SkyTech::Utilities {
+#include <functional>
+#include <list>
+#include <mutex>
+#include <shared_mutex>
+#include <utility>
+#include <cstdint>
+#include <iostream> 
+#include <ranges>
+
+namespace Util {
 template<typename... Parameters>
 class Event {
   /*------------------------------------------------------------------------------------------------------------------*/
@@ -10,11 +19,11 @@ public:
   Event() = default;
   Event(const Event<Parameters...>& event)
     : _functions(event._functions)
-    , _functionsOnce(events._functionsOnce)
+    , _functionsOnce(event._functionsOnce)
     , _masterID(event._masterID) {}
   Event(Event<Parameters...>&& event) noexcept
     : _functions(std::move(event._functions))
-    , _functionsOnce(std::move(events._functionsOnce))
+    , _functionsOnce(std::move(event._functionsOnce))
     , _masterID(std::move(event._masterID)) {}
   ~Event() = default;
 
@@ -91,18 +100,7 @@ public:
     lock.unlock();
 
     for (const auto& [_, function] : functions | std::views::join) {
-#if !SKY_DEBUG
-      try {
-#endif
         function(parameters...);
-#if !SKY_DEBUG
-      }
-      catch (const std::exception& ex) {
-        std::cerr << ex.what() << std::endl;
-      }
-      catch (...) {
-      }
-#endif
     }
   }
 
@@ -111,8 +109,8 @@ public:
   /*------------------------------------------------------------------------------------------------------------------*/
   bool RemoveListener(uint64_t id) {
     bool result = false;
-    std::remove_if(_functions, [&](const auto& pair) { return (pair.first == id) ? result = true : false; });
-    std::remove_if(_functionsOnce, [&](const auto& pair) { return (pair.first == id) ? result = true : false; });
+    _functions.remove_if([&](const auto& pair) { return (pair.first == id) ? result = true : false; });
+    _functionsOnce.remove_if([&](const auto& pair) { return (pair.first == id) ? result = true : false; });
     return result;
   }
 
