@@ -161,12 +161,8 @@ namespace motor_position {
 
         time_to_open = 0;
         time_to_close = 0;
+        calibration_step = check_position;
 
-        /**********
-
-        Help 🆘🤯😵‍💫 Ideas?
-
-        ***********/
         while (True){
             switch (calibration_step){
                 case check_position {
@@ -184,6 +180,7 @@ namespace motor_position {
                     motor_speed::set_desired_speed(callibration_speed);
                     //measure the time until the right end switch is pressed
                     while (!digitalRead(Pin::LEFT_END)) {
+                        //i want to use the isr_left_end()
                         time_to_open++;
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
@@ -198,6 +195,7 @@ namespace motor_position {
                     motor_speed::set_desired_speed(-callibration_speed);
                     //measure the time until the left end switch is pressed
                     while (digitalRead(Pin::RIGHT_END)) {
+                        //i want to use the isr_right_end()
                         time_to_close++;
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
