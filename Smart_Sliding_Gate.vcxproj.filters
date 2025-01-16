@@ -2,11 +2,12 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Old main.cpp" />
-    <ClCompile Include="Fixed  Bastis Changes.cpp" />
+    <ClCompile Include="---Old main.cpp" />
+    <ClCompile Include="---Fixed  Bastis Changes.cpp" />
     <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="Motor.cpp" />
     <ClCompile Include="config_manager.cpp" />
+    <ClCompile Include="Event_handler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Initialize.h" />

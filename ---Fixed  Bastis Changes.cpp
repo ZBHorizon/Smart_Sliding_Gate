@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <thread>
-#include <Initialize.h>
 #include <wiringPi.h>
 
 using namespace std::chrono_literals;
@@ -198,13 +197,7 @@ int main() {
     // Motor Initialisieren
     auto& motor = Motor::Get();
     motor.Initialize();
-    /*
-	/Intterrups einrichten
-    // Attach Interrupts (Replace nullptr with actual ISR functions)
-    wiringPiISR(ControlSystem::Pin::LEFT_END, INT_EDGE_RISING, OnIsrLeftEndStopped());
-    wiringPiISR(ControlSystem::Pin::RIGHT_END, INT_EDGE_RISING, OnIsrRightEndStopped());
-    wiringPiISR(ControlSystem::Pin::LIGHT_Barrier, INT_EDGE_RISING, nullptr);
-    */
+
     while (true) {
       enum class Action {
         NONE,

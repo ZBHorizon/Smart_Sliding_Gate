@@ -15,6 +15,7 @@
 #include "Initialize.h"
 #include "config_manager.h"
 
+using namespace std::chrono_literals;
 
 namespace motor_speed {
     static std::mutex speed_mutex;
@@ -112,124 +113,125 @@ namespace motor_speed {
     /*!
         * \brief ISR callback for the left end sensor.
         */
+    volatile bool left_end_triggered = false;
     void isr_left_end()
     {
+		left_end_triggered = true;
         stop_motor();
     }
 
     /*!
         * \brief ISR callback for the right end sensor.
         */
+    volatile bool right_end_triggered = false;
     void isr_right_end()
     {
+        left_end_triggered = true;
         stop_motor();
     }
 
     /*!
         * \brief ISR callback for the light barrier sensor.
         */
+    volatile bool right_end_triggered = false;
     void isr_light_barrier()
     {
         stop_motor();
-		motor_position::goto_position(0);
-    }
+        motor_position::goto_position(0);
+    }      
 
 } 
 //TODO : Implement the motor_position Control
 namespace motor_position {
-	static std::mutex position_mutex;
-	static std::int32_t current_position = 0;  //!< Current motor position in %
-	static std::int32_t desired_position = 0;  //!< Desired motor position in %
-	static bool is_calibrated = false;  //!< True if the motor is calibrated
-	static std::int32_t time_to_open = 0;  //!< Time it takes to fully open the gate
-	static std::int32_t time_to_close = 0;  //!< Time it takes to fully close the gate
-    
-	// Calibrates the motor position by moving it to one of the end switches.
-    void calibrate_poition() {
-
-    }
-
+    static std::mutex position_mutex;
+    static std::int32_t current_position = 0;  //!< Current motor position in %
+    static std::int32_t desired_position = 0;  //!< Desired motor position in %
+    static bool is_calibrated = false;  //!< True if the motor is calibrated
+    static std::chrono::milliseconds time_to_open = 0ms;  //!< Time it takes to fully open the gate
+    static std::chrono::milliseconds time_to_close = 0ms;  //!< Time it takes to fully close the gate
  
-	// Calibrate Timing 0% - 100% by moving the motor from the right end switch to the left end switch and measiring the time
-	void calibrate_timing() {
-        enum calibration_step{
+    // Calibrate Timing 0% - 100% by moving the motor from the right end switch to the left end switch and measiring the time
+    void calibrate_timing() {
+        std::lock_guard<std::mutex> lock(position_mutex);
+        enum CalibrationStep {
             move_to_starting_position,
             check_position,
             measure_time_to_fully_open,
             measure_time_to_fully_close,
-        }
+        };
 
-        time_to_open = 0;
-        time_to_close = 0;
-        calibration_step = check_position;
+        time_to_open = 0ms;
+        time_to_close = 0ms;
+        CalibrationStep calibration_step = check_position;
 
-        while (True){
+        while (true){
             switch (calibration_step){
-                case check_position {
-                    if (digitalRead(Pin::LEFT_END)) return measure_time_to_fully_open;
-                    if (digitalRead(Pin::RIGHT_END)) return measure_time_to_fully_close;
-                    if (!digitalRead(Pin::LEFT_END) && !digitalRead(Pin::RIGHT_END)) return move_to_starting_position; 
+                case check_position: {
+                    if (digitalRead(Pin::LEFT_END))  calibration_step = measure_time_to_fully_open;
+                    if (digitalRead(Pin::RIGHT_END)) calibration_step = measure_time_to_fully_close;
+                    if (!digitalRead(Pin::LEFT_END) && !digitalRead(Pin::RIGHT_END)) calibration_step = move_to_starting_position;
+                    break;
                 }
-                case move_to_starting_position{
+                case move_to_starting_position:{
                     // run the motor Backwards until the left end switch is pressed, if one of the end switches is pressed, skip to the next part
-                    motor_speed::set_desired_speed(-callibration_speed); 
-                    if (digitalRead(Pin::RIGHT_END)) return check_position;
+                    motor_speed::set_desired_speed(-calibration_speed); 
+                    if (digitalRead(Pin::LEFT_END)) calibration_step = check_position;
+                    break;
                 }
-                case measure_time_to_fully_open{
-                    //run the motor forwards if the right end switch is pressed
-                    motor_speed::set_desired_speed(callibration_speed);
-                    //measure the time until the right end switch is pressed
-                    while (!digitalRead(Pin::LEFT_END)) {
-                        //i want to use the isr_left_end()
+                case measure_time_to_fully_open:{
+                    motor_speed::left_end_triggered = false;
+                    //run the motor forwards if the left end switch is pressed
+                    motor_speed::set_desired_speed(calibration_speed);
+                    //measure the time until the left end switch is pressed
+                    while (!motor_speed::left_end_triggered) {
                         time_to_open++;
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
                     //save the time 
                     save_variable("calibration_time", time_to_open);
                     //start calibration time to close if not calibrated yet
-                    if (time_to_close==0) return measure_time_to_fully_close;
+                    if (time_to_close==0ms) calibration_step = measure_time_to_fully_close;
                     else break;
                 }
-                case measure_time_to_fully_close{
-                    //run the motor backwards if the left end switch is pressed
-                    motor_speed::set_desired_speed(-callibration_speed);
-                    //measure the time until the left end switch is pressed
-                    while (digitalRead(Pin::RIGHT_END)) {
-                        //i want to use the isr_right_end()
+                case measure_time_to_fully_close:{
+                    motor_speed::right_end_triggered = false;
+                    //run the motor backwards if the right end switch is pressed
+                    motor_speed::set_desired_speed(-calibration_speed);
+                    //measure the time until the right end switch is pressed
+                    while (!motor_speed::left_end_triggered) {
                         time_to_close++;
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
                     //save the time
                     save_variable("calibration_time", time_to_close);
                     //start calibration time to close if not calibrated yet
-                    if (time_to_open==0) return measure_time_to_fully_open;
+                    if (time_to_open==0ms) calibration_step = measure_time_to_fully_open;
                     else break;
                 }
+            if (time_to_open == 0ms && time_to_close == 0ms) break;
             }
         }
-
-
-	}
+    }
     
-    //Sets the desired motor position in steps.
-	void goto_position(std::int32_t position)
-	{
-		std::lock_guard<std::mutex> lock(position_mutex);
-		desired_position = position;
-	}
+    //Sets the desired motor position in %.
+    void goto_position(std::int32_t position)
+    {
+        std::lock_guard<std::mutex> lock(position_mutex);
+        
+    }
 
     // thread function that continuously adjusts the current motor position
-	void motor_position_loop()
-	{
-		while (true) {
-			{
-				std::lock_guard<std::mutex> lock(position_mutex);
-
-			}
-			// Delay for a smooth transition
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		}
-	}
+    void motor_position_loop()
+    {
+        while (true) {
+            {
+                std::lock_guard<std::mutex> lock(position_mutex);
+                // 
+            }
+                // Delay for a smooth transition
+                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
 }
 
 int main()
@@ -247,7 +249,7 @@ int main()
 
     // Start the motor control thread
     std::thread control_thread(motor_speed::motor_speed_loop);
-
+    std::thread control_thread(motor_position::motor_position_loop);
 
     control_thread.detach(); 
 
