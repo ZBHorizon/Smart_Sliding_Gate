@@ -8,7 +8,7 @@
  * \param value    The value of the variable to save.
  * \throws std::runtime_error if the file cannot be opened or written.
  */
-void save_variable(const std::string& var_name, std::int32_t value)
+void save_variable(const std::string& var_name, std::any value)
 {
     std::ofstream file("config.bin", std::ios::binary | std::ios::app);
     if (!file.is_open()) {
@@ -38,7 +38,7 @@ void save_variable(const std::string& var_name, std::int32_t value)
  * \return The value of the variable.
  * \throws std::runtime_error if the file cannot be opened or the variable is not found.
  */
-std::int32_t load_variable(const std::string& var_name)
+std::any load_variable(const std::string& var_name)
 {
     std::ifstream file("config.bin", std::ios::binary);
     if (!file.is_open()) {
@@ -57,7 +57,7 @@ std::int32_t load_variable(const std::string& var_name)
         if (!file.good()) break;
 
         // Read the value
-        std::int32_t value;
+        std::any value;
         file.read(reinterpret_cast<char*>(&value), sizeof(value));
         if (!file.good()) break;
 
