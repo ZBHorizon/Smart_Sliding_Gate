@@ -152,6 +152,13 @@ namespace motor_position {
  
 	// Calibrate Timing 0% - 100% by moving the motor from the right end switch to the left end switch and measiring the time
 	void calibrate_timing() {
+        enum calibration_step{
+            move_to_starting_position,
+            check_position,
+            measure_time_to_fully_open,
+            measure_time_to_fully_close,
+        }
+
         time_to_open = 0;
         time_to_close = 0;
 
@@ -160,36 +167,50 @@ namespace motor_position {
         Help 🆘🤯😵‍💫 Ideas?
 
         ***********/
-
-		// run the motor Backwards until the left end switch is pressed, if one of the end switches is pressed, skip to the next part
-        if (digitalRead(Pin::LEFT_END) && digitalRead(Pin::RIGHT_END)) motor_speed::set_desired_speed(-callibration_speed); 
-        
-		//wait till it reached the left end switch
-
-		//if the Right end switch is pressed, skip to the next part and come back later
-
-		//run the motor forwards if the right end switch is pressed
-        motor_speed::set_desired_speed(callibration_speed);
-        //measure the time until the right end switch is pressed
-        while (digitalRead(Pin::LEFT_END)) {
-            time_to_open++;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        while (True){
+            switch (calibration_step){
+                case check_position {
+                    if (digitalRead(Pin::LEFT_END)) return measure_time_to_fully_open;
+                    if (digitalRead(Pin::RIGHT_END)) return measure_time_to_fully_close;
+                    if (!digitalRead(Pin::LEFT_END) && !digitalRead(Pin::RIGHT_END)) return move_to_starting_position; 
+                }
+                case move_to_starting_position{
+                    // run the motor Backwards until the left end switch is pressed, if one of the end switches is pressed, skip to the next part
+                    motor_speed::set_desired_speed(-callibration_speed); 
+                    if (digitalRead(Pin::RIGHT_END)) return check_position;
+                }
+                case measure_time_to_fully_open{
+                    //run the motor forwards if the right end switch is pressed
+                    motor_speed::set_desired_speed(callibration_speed);
+                    //measure the time until the right end switch is pressed
+                    while (!digitalRead(Pin::LEFT_END)) {
+                        time_to_open++;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    }
+                    //save the time 
+                    save_variable("calibration_time", time_to_open);
+                    //start calibration time to close if not calibrated yet
+                    if (time_to_close==0) return measure_time_to_fully_close;
+                    else break;
+                }
+                case measure_time_to_fully_close{
+                    //run the motor backwards if the left end switch is pressed
+                    motor_speed::set_desired_speed(-callibration_speed);
+                    //measure the time until the left end switch is pressed
+                    while (digitalRead(Pin::RIGHT_END)) {
+                        time_to_close++;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    }
+                    //save the time
+                    save_variable("calibration_time", time_to_close);
+                    //start calibration time to close if not calibrated yet
+                    if (time_to_open==0) return measure_time_to_fully_open;
+                    else break;
+                }
+            }
         }
-        //save the time 
-        save_variable("calibration_time", time_to_open);
 
-		//wait till it reached the right end switch
 
-		//run the motor backwards if the left end switch is pressed
-        motor_speed::set_desired_speed(-callibration_speed);
-        //measure the time until the left end switch is pressed
-        while (digitalRead(Pin::RIGHT_END)) {
-            time_to_close++;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-        //save the time
-        save_variable("calibration_time", time_to_close);
-        
 	}
     
     //Sets the desired motor position in steps.
