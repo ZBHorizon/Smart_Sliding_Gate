@@ -23,10 +23,10 @@ namespace SlidingGate {
     
     class motor{
         static std::mutex motor_mutex;
-        static std::int32_t current_speed = 0;  //!< Current motor speed (-1023..1023)
-        static std::int32_t desired_speed = 0; //!< Desired motor speed
-        static std::int32_t current_position = 0;  //!< Current motor position in %
-        static std::int32_t desired_position = 0;  //!< Desired motor position in %
+        static int16_t current_speed = 0;  //!< Current motor speed (-1023..1023)
+        static int16_t desired_speed = 0; //!< Desired motor speed
+        static int16_t current_position = 0;  //!< Current motor position in %
+        static int16_t desired_position = 0;  //!< Desired motor position in %
         static bool is_calibrated = false;  //!< True if the motor is calibrated
         static std::chrono::milliseconds time_to_open = 0ms;  //!< Time it takes to fully open the gate
         static std::chrono::milliseconds time_to_close = 0ms;  //!< Time it takes to fully close the gate
@@ -77,7 +77,7 @@ namespace SlidingGate {
             *        The actual speed is adjusted in a separate control loop/thread.
             * \param speed The new desired speed, -1023 to +1023.
             */
-        void set_desired_speed(std::int32_t speed)
+        void set_desired_speed(int16_t speed)
         {
             std::lock_guard<std::mutex> lock(motor_mutex);
             desired_speed = speed;
@@ -94,8 +94,8 @@ namespace SlidingGate {
                 {
                     std::lock_guard<std::mutex> lock(motor_mutex);
                     // Check  Ends:
-                    if (desired_speed > 0 && digitalRead(Pin::LEFT_END)) return;
-                    if (desired_speed < 0 && (digitalRead(Pin::RIGHT_END) || digitalRead(Pin::LIGHT_BARRIER))) return;
+                    if (desired_speed > 0 && digitalRead(Pin::OPEN_SWITCH)) return;
+                    if (desired_speed < 0 && (digitalRead(Pin::CLOSE_SWITCH) || digitalRead(Pin::LIGHT_BARRIER))) return;
 
                     if (desired_speed == 0) {
                         soft_stop();
@@ -122,27 +122,27 @@ namespace SlidingGate {
         /*!
             * \brief ISR callback for the left end sensor.
             */
-        volatile bool left_end_triggered = false;
-        void isr_left_end()
+        volatile bool OPEN_SWITCH_triggered = false;
+        void isr_OPEN_SWITCH()
         {
-            left_end_triggered = true;
+            OPEN_SWITCH_triggered = true;
             stop_motor();
         }
 
         /*!
             * \brief ISR callback for the right end sensor.
             */
-        volatile bool right_end_triggered = false;
-        void isr_right_end()
+        volatile bool CLOSE_SWITCH_triggered = false;
+        void isr_CLOSE_SWITCH()
         {
-            left_end_triggered = true;
+            OPEN_SWITCH_triggered = true;
             stop_motor();
         }
 
         /*!
             * \brief ISR callback for the light barrier sensor.
             */
-        volatile bool right_end_triggered = false;
+        volatile bool CLOSE_SWITCH_triggered = false;
         void isr_light_barrier()
         {
             stop_motor();
@@ -166,21 +166,21 @@ namespace SlidingGate {
             while (true) {
                 switch (calibration_step) {
                     case check_position: {
-                        if (digitalRead(Pin::LEFT_END))  calibration_step = measure_time_to_fully_open;
-                        if (digitalRead(Pin::RIGHT_END)) calibration_step = measure_time_to_fully_close;
-                        if (!digitalRead(Pin::LEFT_END) && !digitalRead(Pin::RIGHT_END)) calibration_step = move_to_starting_position;
+                        if (digitalRead(Pin::OPEN_SWITCH))  calibration_step = measure_time_to_fully_open;
+                        if (digitalRead(Pin::CLOSE_SWITCH)) calibration_step = measure_time_to_fully_close;
+                        if (!digitalRead(Pin::OPEN_SWITCH) && !digitalRead(Pin::CLOSE_SWITCH)) calibration_step = move_to_starting_position;
                     } break;
                     case move_to_starting_position: {
                         // run the motor Backwards until the left end switch is pressed, if one of the end switches is pressed, skip to the next part
                         set_desired_speed(-MotorPosition::calibration_speed);
-                        if (digitalRead(Pin::LEFT_END)) calibration_step = check_position;
+                        if (digitalRead(Pin::OPEN_SWITCH)) calibration_step = check_position;
                     } break;
                     case measure_time_to_fully_open: {
-                        left_end_triggered = false;
+                        OPEN_SWITCH_triggered = false;
                         //run the motor forwards if the left end switch is pressed
                         set_desired_speed(MotorPosition::calibration_speed);
                         //measure the time until the left end switch is pressed
-                        while (!left_end_triggered) {
+                        while (!OPEN_SWITCH_triggered) {
                             time_to_open++;
                             std::this_thread::sleep_for(std::chrono::milliseconds(1));
                         }
@@ -191,11 +191,11 @@ namespace SlidingGate {
                         calibration_step = measure_time_to_fully_close;
                     } break;
                     case measure_time_to_fully_close: {
-                        right_end_triggered = false;
+                        CLOSE_SWITCH_triggered = false;
                         //run the motor backwards if the right end switch is pressed
                         set_desired_speed(-MotorPosition::calibration_speed);
                         //measure the time until the right end switch is pressed
-                        while (!left_end_triggered) {
+                        while (!OPEN_SWITCH_triggered) {
                             time_to_close++;
                             std::this_thread::sleep_for(std::chrono::milliseconds(1));
                         }
@@ -210,7 +210,7 @@ namespace SlidingGate {
         }
     
         //Sets the desired motor position in %.
-        void goto_position(std::int32_t position)
+        void goto_position(int16_t position)
         {
             std::lock_guard<std::mutex> lock(motor_mutex);
         
@@ -240,8 +240,8 @@ int main()
         return 1;
     }
 
-    wiringPiISR(Pin::LEFT_END, INT_EDGE_RISING, motor::isr_left_end);
-    wiringPiISR(Pin::RIGHT_END, INT_EDGE_RISING, motor::isr_right_end);
+    wiringPiISR(Pin::OPEN_SWITCH, INT_EDGE_RISING, motor::isr_OPEN_SWITCH);
+    wiringPiISR(Pin::CLOSE_SWITCH, INT_EDGE_RISING, motor::isr_CLOSE_SWITCH);
     wiringPiISR(Pin::LIGHT_BARRIER, INT_EDGE_RISING, motor::isr_light_barrier);
 
     // Start the motor control thread

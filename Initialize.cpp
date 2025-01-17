@@ -24,10 +24,10 @@ namespace SlidingGate {
         pinMode(Pin::RESERVE_OUT, OUTPUT);
 
         // Configure Input Pins with Pull-Up Resistors
-        pinMode(Pin::LEFT_END, INPUT);
-        pinMode(Pin::RIGHT_END, INPUT);
-        pullUpDnControl(Pin::LEFT_END, PUD_UP);
-        pullUpDnControl(Pin::RIGHT_END, PUD_UP);
+        pinMode(Pin::OPEN_SWITCH, INPUT);
+        pinMode(Pin::CLOSE_SWITCH, INPUT);
+        pullUpDnControl(Pin::OPEN_SWITCH, PUD_UP);
+        pullUpDnControl(Pin::CLOSE_SWITCH, PUD_UP);
 
         pinMode(Pin::REMOTE_A, INPUT);
         pinMode(Pin::REMOTE_B, INPUT);

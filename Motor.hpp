@@ -11,5 +11,7 @@ namespace SlidingGate {
     struct MotorPosition {
         static int calibration_speed;
     };
+
+
 }
 

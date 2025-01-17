@@ -6,10 +6,10 @@
 
 namespace SlidingGate {
     struct Pin {
-        class Manager {
+        static class Manager {
             public:
             //! Initializes all GPIO pins used in the system.
-            void InitializeGPIO();
+            static void InitializeGPIO();
         };
         /*
         +----------+------+-----+----------+-----+------+----------+
@@ -29,8 +29,8 @@ namespace SlidingGate {
         |          |      |14   | 23|24    |10   |      |            |
         |0V        |      |     | 25|26    |11   |      |            |
         |          |      |30   | 27|28    |31   |      |            |
-        |LEFT_END  |      |21   | 29|30    |     |      |0V          |
-        |RIGHT_END |      |22   | 31|32    |26   |      |            |
+        |OPEN_SWITCH  |      |21   | 29|30    |     |      |0V          |
+        |CLOSE_SWITCH |      |22   | 31|32    |26   |      |            |
         |          |      |23   | 33|34    |     |      |0V          |
         |          |      |24   | 35|36    |27   |      |            |
         |          |      |25   | 37|38    |28   |      |            |
@@ -39,8 +39,8 @@ namespace SlidingGate {
         */
         static constexpr int PWM = 1;   // Hardware PWM
         static constexpr int DIRECTION = 4;   // Direction Control
-        static constexpr int LEFT_END = 21;  // Left End Switch
-        static constexpr int RIGHT_END = 22;  // Right End Switch
+        static constexpr int OPEN_SWITCH = 21;  // Left End Switch
+        static constexpr int CLOSE_SWITCH = 22;  // Right End Switch
         static constexpr int REMOTE_A = 3;   // Open Remote Button
         static constexpr int REMOTE_B = 2;   // Half Open Remote Button
         static constexpr int REMOTE_C = 12;   // Close Remote Button

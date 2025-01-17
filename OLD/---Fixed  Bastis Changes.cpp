@@ -1,6 +1,6 @@
 //! @file main.cpp
 //! @author Noah
-//! Test-Code für eine Torsteuerung mit Vorwärts- und Rückwärtsfunktion,
+//! Test-Code fï¿½r eine Torsteuerung mit Vorwï¿½rts- und Rï¿½ckwï¿½rtsfunktion,
 //! Endschalterauswertung und sanftem Beschleunigen/Abbremsen.
 //! @version 0.2
 //! @date 2025-01-12
@@ -18,8 +18,8 @@ namespace Noah::Engineering {
 struct Pins {
   static constexpr int PWM       = 1;   // Hardware PWM
   static constexpr int DIRECTION = 4;   // Direction Control
-  static constexpr int LEFT_END  = 21;  // Left End Switch
-  static constexpr int RIGHT_END = 22;  // Right End Switch
+  static constexpr int OPEN_SWITCH  = 21;  // Left End Switch
+  static constexpr int CLOSE_SWITCH = 22;  // Right End Switch
   static constexpr int OPEN      = 3;   // Open Remote Button
   static constexpr int CLOSE     = 2;   // Close Remote Button
 };
@@ -75,11 +75,11 @@ public:
     // Richtungspin konfigurieren
     pinMode(Pins::DIRECTION, OUTPUT);
 
-    // Endschalter-Pins als Eingänge, mit Pull-ups
-    pinMode(Pins::LEFT_END, INPUT);
-    pinMode(Pins::RIGHT_END, INPUT);
-    pullUpDnControl(Pins::LEFT_END, PUD_UP);
-    pullUpDnControl(Pins::RIGHT_END, PUD_UP);
+    // Endschalter-Pins als Eingï¿½nge, mit Pull-ups
+    pinMode(Pins::OPEN_SWITCH, INPUT);
+    pinMode(Pins::CLOSE_SWITCH, INPUT);
+    pullUpDnControl(Pins::OPEN_SWITCH, PUD_UP);
+    pullUpDnControl(Pins::CLOSE_SWITCH, PUD_UP);
 
     // Taster-Pins
     pinMode(Pins::OPEN, INPUT);
@@ -88,8 +88,8 @@ public:
     pullUpDnControl(Pins::CLOSE, PUD_UP);
 
     // Interrupts einrichten
-    wiringPiISR(Pins::LEFT_END, INT_EDGE_BOTH, &Motor::OnIsrLeftEndStopped);
-    wiringPiISR(Pins::RIGHT_END, INT_EDGE_BOTH, &Motor::OnIsrRightEndStopped);
+    wiringPiISR(Pins::OPEN_SWITCH, INT_EDGE_BOTH, &Motor::OnIsrLeftEndStopped);
+    wiringPiISR(Pins::CLOSE_SWITCH, INT_EDGE_BOTH, &Motor::OnIsrRightEndStopped);
   }
 
   void StopHard() {
@@ -104,14 +104,14 @@ public:
       std::this_thread::sleep_for(RampDelays::STOP_DURATION);
     }
     pwmWrite(Pins::PWM, 0);
-    digitalWrite(Pins::DIRECTION, LOW); // optionales Zurücksetzen der Richtung
+    digitalWrite(Pins::DIRECTION, LOW); // optionales Zurï¿½cksetzen der Richtung
   }
 
   //! Setzt die Motorgeschwindigkeit mit sanftem Hoch-/Runterfahren.
-  //! @param speed Gewünschte Geschwindigkeit (-1023 bis +1023).
-  //!              < 0 => rückwärts, > 0 => vorwärts, == 0 => stop.
+  //! @param speed Gewï¿½nschte Geschwindigkeit (-1023 bis +1023).
+  //!              < 0 => rï¿½ckwï¿½rts, > 0 => vorwï¿½rts, == 0 => stop.
   void UpdateSpeed(int speed) {
-    // Endschalter-Blockade prüfen:
+    // Endschalter-Blockade prï¿½fen:
     if (speed > 0 && _endStopStatus == Status::LEFT_BLOCKED) return;
     if (speed < 0 && _endStopStatus == Status::RIGHT_BLOCKED) return;
 
@@ -156,7 +156,7 @@ private:
     
     static void OnIsrLeftEndStopped() {
     auto& motor = Motor::Get();
-    if (digitalRead(Pins::LEFT_END) == LOW) {
+    if (digitalRead(Pins::OPEN_SWITCH) == LOW) {
       motor._endStopStatus = Status::LEFT_BLOCKED;
       motor.StopHard();
     } else {
@@ -165,7 +165,7 @@ private:
   }
   static void OnIsrRightEndStopped() {
     auto& motor = Motor::Get();
-    if (digitalRead(Pins::RIGHT_END) == LOW) {
+    if (digitalRead(Pins::CLOSE_SWITCH) == LOW) {
         motor._endStopStatus = Status::RIGHT_BLOCKED;
         motor.StopHard();
     } else {
@@ -180,7 +180,7 @@ private:
 private:
   /* Variables */
   /*------------------------------------------------------------------------------------------------------------------*/
-  int _currentPwmValue = 0; // negativ - rückwärts | positiv - vorwärts
+  int _currentPwmValue = 0; // negativ - rï¿½ckwï¿½rts | positiv - vorwï¿½rts
 
   std::atomic<Status> _endStopStatus { Status::NONE };
 };
@@ -206,7 +206,7 @@ int main() {
       };
       static constexpr std::chrono::milliseconds DEBOUNCE_DELAY_DURATION = 200ms;
 
-      // Überprüfen der angeforderten Aktion
+      // ï¿½berprï¿½fen der angeforderten Aktion
 
       Action action = Action::NONE;
       if (digitalRead(Pins::OPEN) == LOW) {
@@ -218,7 +218,7 @@ int main() {
         std::this_thread::sleep_for(DEBOUNCE_DELAY_DURATION);
       }
 
-      // Ausführen
+      // Ausfï¿½hren
       switch (action) {
         case Action::OPEN:  motor.UpdateSpeed(1000);  break;
         case Action::CLOSE: motor.UpdateSpeed(-1000); break;

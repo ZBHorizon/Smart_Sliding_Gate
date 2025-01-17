@@ -1,16 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="---Old main.cpp" />
-    <ClCompile Include="---Fixed  Bastis Changes.cpp" />
     <ClCompile Include="Initialize.cpp" />
-    <ClCompile Include="Motor.cpp" />
     <ClCompile Include="Event_handler.hpp" />
-    <ClCompile Include="Test_event.cpp" />
+    <ClCompile Include="Test_Motor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Initialize.hpp" />
-    <ClInclude Include="Motor.hpp" />
   </ItemGroup>
 </Project>
