@@ -1,17 +1,13 @@
 #include <Initialize.hpp>
 #include <iostream>
 #include <cstdlib>
-
+#include <wiringPi.h>
 
 namespace SlidingGate {
     void Pin::Manager::InitializeGPIO() {
 		
         // Initialize WiringPi
-        if (wiringPiSetup() == -1) {
-            std::cerr << "Failed to initialize WiringPi.\n";
-            std::exit(1);
-        }
-
+        wiringPiSetup();
         // Configure PWM
         pinMode(Pin::PWM, PWM_OUTPUT);
         pwmSetMode(PWM_MODE_MS);

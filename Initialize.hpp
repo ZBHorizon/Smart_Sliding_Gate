@@ -6,8 +6,8 @@
 
 namespace SlidingGate {
     struct Pin {
-        static class Manager {
-            public:
+        class Manager {
+        public:
             //! Initializes all GPIO pins used in the system.
             static void InitializeGPIO();
         };
@@ -49,5 +49,5 @@ namespace SlidingGate {
         static constexpr int RESERVE_OUT = 16;
         static constexpr int LIGHT_BARRIER = 5;   // Light Barrier Sensor
         static constexpr int RESERVE_IN = 6;
-    }
+    };
 }
