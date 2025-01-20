@@ -12,7 +12,7 @@
 #include <wiringPi.h>
 #include <Initialize.hpp>
 
-using namespace std::chrono_literals;
+using namespace std::chrono;
 
 namespace SlidingGate {
 
@@ -25,47 +25,51 @@ namespace SlidingGate {
     class Motor {
     public:
         /*!
-         * \brief Ramp timings for starting/stopping motor speed transitions.
+         * \brief Param timings for starting/stopping motor speed transitions.
          *        Kept static so we can reference them without an instance.
          */
-        struct Ramp {
-            //! Time delay per speed step-up
-            inline static constexpr std::chrono::milliseconds start_Motor = 5ms;
-            //! Time delay per speed step-down
-            inline static constexpr std::chrono::milliseconds stop_Motor  = 4ms;
+        struct Param {
+            //! Time delay per speed step
+            inline static milliseconds motor_ramp = 1ms;
+            //! Speed used in calibration (positive = forward, negative = backward)
+            inline static uint8_t calibration_speed = 10;
+			//! Speed threshold for range of direction change
+            inline static uint8_t direction_threshold = 2;
+			//! step size
+            inline static uint8_t step = 1;
+			//! tolerance for speed
+            inline static uint8_t tolerance = 3;
         };
+        
 
-        //! Speed used in calibration (positive = forward, negative = backward)
-        inline static int16_t calibration_speed;
         //! Desired motor speed, set asynchronously
-        inline static int16_t desired_speed;
+        inline static int8_t desired_speed = 0;
         //! Current motor speed, gradually changes to match desired
-        inline static int16_t current_speed;
+        inline static int8_t current_speed = 0;
         //! Time it takes to fully open the gate
-        inline static std::chrono::milliseconds time_to_open;
+        inline static milliseconds time_to_open = 0ms;
         //! Time it takes to fully close the gate
-        inline static std::chrono::milliseconds time_to_close;
+        inline static milliseconds time_to_close = 0ms;
         //! Flag indicating if the motor has been calibrated
-        inline static bool is_calibrated;
-
+        inline static bool is_calibrated = false;
+        
         /*!
          * \brief Calculates brake time in ms based on the given speed.
          */
-        static int calculate_brake_time(int16_t speed) {
-            std::lock_guard<std::mutex> lock(motor_mutex);
+        static milliseconds calculate_brake_time(int8_t speed) {
 
             // Number of steps from speed down to 0
-            int16_t steps = std::abs(speed);
+            uint8_t steps = std::abs(speed);
 
             // Total brake time = steps * time-per-step
-            int16_t brake_time_ms = steps * Ramp::stop_Motor.count();
+            milliseconds brake_time_ms = steps * Param::motor_ramp;
             return brake_time_ms;
         }
 
         /*!
          * \brief Sets desired speed, waits a given duration, then sets speed back to 0.
          */
-        static void run_and_stop_after_time(int16_t speed, std::chrono::milliseconds duration) {
+        static void run_and_stop_after_time(int8_t speed, milliseconds duration) {
             {
                 std::lock_guard<std::mutex> lock(motor_mutex);
                 desired_speed = speed;
@@ -74,15 +78,28 @@ namespace SlidingGate {
             {
                 std::lock_guard<std::mutex> lock(motor_mutex);
                 desired_speed = 0;
+                std::cout << "Ende\n";
             }
         }
 
         /*!
          * \brief Sets the desired motor speed (thread-safe).
          */
-        static void set_desired_speed(int16_t speed) {
+        static void set_desired_speed(int8_t speed) {
             std::lock_guard<std::mutex> lock(motor_mutex);
             desired_speed = speed;
+        }
+
+        static void check_for_error() {
+            std::lock_guard<std::mutex> lock(motor_mutex);
+            // If moving forward and the OPEN_SWITCH is triggered, stop
+            if (desired_speed > 0 && digitalRead(Pin::OPEN_SWITCH)) {
+                desired_speed = 0;
+            }
+            // If moving backward and the CLOSE_SWITCH or LIGHT_BARRIER is triggered, stop
+            if (desired_speed < 0 && (digitalRead(Pin::CLOSE_SWITCH) || digitalRead(Pin::LIGHT_BARRIER))) {
+                desired_speed = 0;
+            }
         }
 
         /*!
@@ -92,32 +109,36 @@ namespace SlidingGate {
         static void motor_speed_loop() {
             while (true) {
                 std::lock_guard<std::mutex> lock(motor_mutex);
-
-                // If moving forward and the OPEN_SWITCH is triggered, stop
-                if (desired_speed > 0 && digitalRead(Pin::OPEN_SWITCH)) {
-                    desired_speed = 0;
-                }
-                // If moving backward and the CLOSE_SWITCH or LIGHT_BARRIER is triggered, stop
-                if (desired_speed < 0 && (digitalRead(Pin::CLOSE_SWITCH) || digitalRead(Pin::LIGHT_BARRIER))) {
-                    desired_speed = 0;
-                }
-
+                
+                check_for_error();
+                
                 // Step current_speed toward desired_speed
                 while (current_speed != desired_speed) {
-                    if (current_speed < desired_speed) current_speed++;
-                    else if (current_speed > desired_speed) current_speed--;
+                    check_for_error();
+					// If we are close enough to the desired speed, just set it
+                    if (abs(current_speed - desired_speed) > Param::tolerance) {
 
-                    // Update direction if we cross zero
-                    if (current_speed == 0) {
-                        // If desired >= 0 => forward = LOW, else backward = HIGH
-                        digitalWrite(Pin::DIRECTION, (desired_speed >= 0) ? LOW : HIGH);
-                    }
+						// Update direction if we cross zero
+                        if (abs(current_speed) < Param::direction_threshold) {
+                            digitalWrite(Pin::DIRECTION, (desired_speed >= 0) ? LOW : HIGH);
+                        }
+						// Update speed
+                        if (current_speed < desired_speed) {
+                            current_speed = current_speed + Param::step;
+                        }
+                        else if (current_speed > desired_speed) {
+                            current_speed = current_speed - Param::step;
+                        }
+					}
+					else {
+						current_speed = desired_speed;
+					}
 
                     // Apply PWM: absolute value in case speed is negative
-                    pwmWrite(Pin::PWM, std::abs(current_speed));
+                    pwmWrite(Pin::PWM, abs(current_speed));
 
-                    // Delay for smooth ramping
-                    std::this_thread::sleep_for(Ramp::start_Motor);
+                    // Delay for smooth Paraming
+                    std::this_thread::sleep_for(Param::motor_ramp);
                 }
             }
         }
@@ -154,14 +175,14 @@ namespace SlidingGate {
 
                 case move_to_starting_position: {
                     // Move gate backwards until OPEN_SWITCH is triggered or we detect a boundary
-                    desired_speed = -calibration_speed;
+                    desired_speed = -Param::calibration_speed;
                     if (digitalRead(Pin::OPEN_SWITCH))
                         calibration_step = check_position;
                 } break;
 
                 case measure_time_to_fully_open: {
                     // Move gate forward
-                    desired_speed = calibration_speed;
+                    desired_speed = Param::calibration_speed;
                     // measure time until OPEN_SWITCH is triggered
                     while (!digitalRead(Pin::OPEN_SWITCH)) {
                         time_to_open += 1ms;
@@ -178,7 +199,7 @@ namespace SlidingGate {
 
                 case measure_time_to_fully_close: {
                     // Move gate backward
-                    desired_speed = -calibration_speed;
+                    desired_speed = -Param::calibration_speed;
                     // measure time until CLOSE_SWITCH is triggered
                     while (!digitalRead(Pin::CLOSE_SWITCH)) {
                         time_to_close += 1ms;
@@ -201,26 +222,19 @@ namespace SlidingGate {
         /*!
          * \brief Immediately stops the motor (sets PWM to zero and speed = 0).
          */
-        static void stop_motor() {
+        static void motor_ramp() {
             std::lock_guard<std::mutex> lock(motor_mutex);
             pwmWrite(Pin::PWM, 0);
             current_speed = 0;
             desired_speed = 0;
         }
     };
-
-    //! ----------------------------------------------------------
-    //! Define all static data members outside the class
-    //! ----------------------------------------------------------
-    int16_t Motor::calibration_speed = 100;
-    int16_t Motor::desired_speed     = 0;
-    int16_t Motor::current_speed     = 0;
-    std::chrono::milliseconds Motor::time_to_open { 0 };
-    std::chrono::milliseconds Motor::time_to_close { 0 };
-    bool Motor::is_calibrated        = false;
-
+    
+    
 } // namespace SlidingGate
-
+PI_THREAD(test) {
+    SlidingGate::Motor::run_and_stop_after_time(-300, 5000ms);
+}
 // --------------------------------------------------------------
 // Main Program
 // --------------------------------------------------------------
@@ -242,7 +256,7 @@ int main()
 
     // User input
     char user_input = '\0';
-
+    /*
     // Check calibration
     if (!Motor::is_calibrated) {
         std::cout << "Der Motor ist nicht kalibriert. Möchten Sie die Kalibrierung jetzt starten? (j/n): ";
@@ -266,8 +280,8 @@ int main()
                 std::cout << "Kalibrierung fehlgeschlagen.\n";
             }
         }
-    }
-
+    }*/
+    /*
     // Main loop for user interaction
     while (true)
     {
@@ -282,7 +296,7 @@ int main()
             // Calculate time till we start braking
             // (time_to_open) minus brake_time
             auto time_till_stop_ms = Motor::time_to_open 
-                - std::chrono::milliseconds(Motor::calculate_brake_time(speed));
+                - milliseconds(Motor::calculate_brake_time(speed));
 
             if (time_till_stop_ms < 0ms) {
                 time_till_stop_ms = 500ms; // fallback
@@ -296,7 +310,7 @@ int main()
             int16_t speed = 100;
 
             auto time_till_stop_ms = Motor::time_to_open
-                - std::chrono::milliseconds(Motor::calculate_brake_time(speed));
+                - milliseconds(Motor::calculate_brake_time(speed));
 
             if (time_till_stop_ms < 0ms) {
                 time_till_stop_ms = 500ms;
@@ -308,7 +322,7 @@ int main()
             // Half open
             std::cout << "Tor öffnet zur Hälfte...\n";
             // Example: just run for 5000ms at speed=100
-            Motor::run_and_stop_after_time(100, 5000ms);
+            piThreadCreate(test);
         }
         else if (user_input == 's') {
             // Stop the motor
@@ -327,6 +341,7 @@ int main()
         // Optional pause
         std::this_thread::sleep_for(100ms);
     }
+    */
 
     // Stop motor control thread
     Motor::set_desired_speed(0);

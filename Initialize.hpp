@@ -6,8 +6,8 @@
 
 namespace SlidingGate {
     struct Pin {
-        static class Manager {
-            public:
+        class Manager {
+        public:
             //! Initializes all GPIO pins used in the system.
             static void InitializeGPIO();
         };
@@ -32,7 +32,7 @@ namespace SlidingGate {
         |OPEN_SWITCH  |      |21   | 29|30    |     |      |0V          |
         |CLOSE_SWITCH |      |22   | 31|32    |26   |      |            |
         |          |      |23   | 33|34    |     |      |0V          |
-        |          |      |24   | 35|36    |27   |      |            |
+        |MOTOR_POWER|      |24   | 35|36    |27   |      |            |
         |          |      |25   | 37|38    |28   |      |            |
         |0V        |      |     | 39|40    |29   |      |            |
         +----------+------+-----+----------+-----+------+----------+
@@ -49,5 +49,6 @@ namespace SlidingGate {
         static constexpr int RESERVE_OUT = 16;
         static constexpr int LIGHT_BARRIER = 5;   // Light Barrier Sensor
         static constexpr int RESERVE_IN = 6;
-    }
+		static constexpr int MOTOR_POWER = 24;  // Motor Power Amperemeter Sensor
+    };
 }

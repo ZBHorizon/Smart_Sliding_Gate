@@ -40,6 +40,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
+    <RemoteCopyIncludeDirectories>/usr/local/lib/;/usr/local/include/;)/usr/lib/;/usr/include/;/root/WiringPi</RemoteCopyIncludeDirectories>
+    <RemoteRootDir>~/projects</RemoteRootDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
@@ -51,6 +53,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <IncludePath>C:\Users\noaht\source\repos\Smart_Sliding_Gate\include;C:\Users\noaht\source\repos\Smart_Sliding_Gate</IncludePath>
+    <RemoteCompileLocalCopyObjectFiles>true</RemoteCompileLocalCopyObjectFiles>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
@@ -71,7 +74,6 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Event_handler.hpp" />
     <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="Test_Motor.cpp" />
   </ItemGroup>
@@ -82,6 +84,9 @@
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <LibraryDependencies>wiringPi</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

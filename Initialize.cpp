@@ -1,23 +1,22 @@
 #include <Initialize.hpp>
 #include <iostream>
 #include <cstdlib>
-
+#include <wiringPi.h>
 
 namespace SlidingGate {
     void Pin::Manager::InitializeGPIO() {
 		
         // Initialize WiringPi
-        if (wiringPiSetup() == -1) {
-            std::cerr << "Failed to initialize WiringPi.\n";
-            std::exit(1);
-        }
-
+        wiringPiSetup();
         // Configure PWM
         pinMode(Pin::PWM, PWM_OUTPUT);
         pwmSetMode(PWM_MODE_MS);
-        pwmSetRange(1024);
-        pwmSetClock(1);
+		pwmSetRange(128); // 128 -> 4-bit resolution up to 4096 -> 12-bit resolution
+        pwmSetClock(8);//PWM Goal Frequency = 19.200.000(~20kHz) / (8 × 128) = 18.750 Hz ] 
+		//20Khz for Cytron MD20A Motor Driver
 
+		// Configure Analog Motor Power Sensor Pin
+		pinMode(Pin::MOTOR_POWER,INPUT);
         // Configure Output Pins
         pinMode(Pin::DIRECTION, OUTPUT);
         pinMode(Pin::LAMP, OUTPUT);
