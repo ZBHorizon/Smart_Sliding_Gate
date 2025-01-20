@@ -33,11 +33,11 @@ namespace SlidingGate {
             inline static milliseconds motor_ramp = 1ms;
             //! Speed used in calibration (positive = forward, negative = backward)
             inline static uint8_t calibration_speed = 10;
-			//! Speed threshold for range of direction change
+            //! Speed threshold for range of direction change
             inline static uint8_t direction_threshold = 2;
-			//! step size
+            //! step size
             inline static uint8_t step = 1;
-			//! tolerance for speed
+            //! tolerance for speed
             inline static uint8_t tolerance = 3;
         };
         
@@ -90,15 +90,14 @@ namespace SlidingGate {
             desired_speed = speed;
         }
 
-        static void check_for_error() {
+        static bool check_ends() {
             std::lock_guard<std::mutex> lock(motor_mutex);
-            // If moving forward and the OPEN_SWITCH is triggered, stop
-            if (desired_speed > 0 && digitalRead(Pin::OPEN_SWITCH)) {
-                desired_speed = 0;
+            if (desired_speed > 0 && digitalRead(Pin::OPEN_SWITCH)|| desired_speed < 0 && digitalRead(Pin::CLOSE_SWITCH)) {
+                return true;
             }
-            // If moving backward and the CLOSE_SWITCH or LIGHT_BARRIER is triggered, stop
-            if (desired_speed < 0 && (digitalRead(Pin::CLOSE_SWITCH) || digitalRead(Pin::LIGHT_BARRIER))) {
-                desired_speed = 0;
+            else
+            {
+                return false;
             }
         }
 
@@ -109,30 +108,48 @@ namespace SlidingGate {
         static void motor_speed_loop() {
             while (true) {
                 std::lock_guard<std::mutex> lock(motor_mutex);
-                
-                check_for_error();
+
+                // If we are not moving, wait a bit
+                if (abs(desired_speed) + abs(current_speed) == 0) {
+                    std::this_thread::sleep_for(200ms);
+                    continue;
+                }
+                // Check for errors
+                if (check_ends()) {
+                    current_speed = 0;
+                    desired_speed = 0;
+                    pwmWrite(Pin::PWM, abs(current_speed));
+                    std::this_thread::sleep_for(200ms);
+                    continue;
+                };
                 
                 // Step current_speed toward desired_speed
                 while (current_speed != desired_speed) {
-                    check_for_error();
-					// If we are close enough to the desired speed, just set it
+                    // Check for errors
+                    if (check_ends()) {
+                        current_speed = 0;
+                        desired_speed = 0;
+                        pwmWrite(Pin::PWM, abs(current_speed));
+                        break;
+                    };
+                    // If we are close enough to the desired speed, just set it
                     if (abs(current_speed - desired_speed) > Param::tolerance) {
 
-						// Update direction if we cross zero
+                        // Update direction if we cross zero
                         if (abs(current_speed) < Param::direction_threshold) {
                             digitalWrite(Pin::DIRECTION, (desired_speed >= 0) ? LOW : HIGH);
                         }
-						// Update speed
+                        // Update speed
                         if (current_speed < desired_speed) {
                             current_speed = current_speed + Param::step;
                         }
                         else if (current_speed > desired_speed) {
                             current_speed = current_speed - Param::step;
                         }
-					}
-					else {
-						current_speed = desired_speed;
-					}
+                    }
+                    else {
+                        current_speed = desired_speed;
+                    }
 
                     // Apply PWM: absolute value in case speed is negative
                     pwmWrite(Pin::PWM, abs(current_speed));
