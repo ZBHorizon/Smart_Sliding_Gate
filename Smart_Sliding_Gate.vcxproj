@@ -74,6 +74,7 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="hdadhöodhaüosd.cpp" />
     <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="Test_Motor.cpp" />
   </ItemGroup>

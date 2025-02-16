@@ -1,25 +1,64 @@
-﻿#include <wiringPi.h>
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include "Motor.hpp"
+#include "Initialize.hpp"
 
-// "LED-Pin: wiringPi-Pin 0" entspricht "BCM_GPIO 17".
-// Bei einer Initialisierung mit wiringPiSetupSys muss die BCM-Nummerierung verwendet werden.
-// Wenn Sie eine andere Pin-Nummer wählen, verwenden Sie die BCM-Nummerierung, und
-// aktualisieren Sie außerdem unter "Eigenschaftenseiten" > "Buildereignisse" den Remote-Postbuildereignisbefehl,
-// der den GPIO-Export zum Einrichten von wiringPiSetupSys verwendet.
-#define	LED	17
+using namespace std::chrono;
+using namespace SlidingGate;
 
-int main(void)
-{	
+int main() {
+    try {
+        // Initialize GPIO and INA226 sensor
+        Pin::Manager::initialize_gpio();
+        INA226::initialize();
+    } catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        return 1;
+    }
 
-	wiringPiSetupSys();
+    // Start motor loops in separate threads using fully qualified names:
+    std::thread motorSpeedThread(&SlidingGate::Motor::motor_speed_loop);
+    std::thread motorPosThread(&SlidingGate::Motor::motor_position_loop);
 
-	pinMode(LED, OUTPUT);
+    // Simple command loop for user interaction
+    char user_input = '\0';
+    bool running = true;
+    while (running) {
+        std::cout << "\nBefehl (o=öffnen, c=schließen, h=halb, s=stop, q=beenden): ";
+        std::cin >> user_input;
+        switch (user_input) {
+            case 'o':
+                std::cout << "Tor wird geöffnet...\n";
+                Motor::open();
+                break;
+            case 'c':
+                std::cout << "Tor wird geschlossen...\n";
+                Motor::close();
+                break;
+            case 'h':
+                std::cout << "Tor wird halb geöffnet...\n";
+                Motor::half_open();
+                break;
+            case 's':
+                std::cout << "Motor wird gestoppt...\n";
+                Motor::stop();
+                break;
+            case 'q':
+                std::cout << "Programm wird beendet...\n";
+                running = false;
+                break;
+            default:
+                std::cout << "Ungültiger Befehl.\n";
+        }
+        std::this_thread::sleep_for(100ms);
+    }
 
-	while (true)
-	{
-		digitalWrite(LED, HIGH);  // Ein
-		delay(500); // ms
-		digitalWrite(LED, LOW);	  // Aus
-		delay(500);
-	}
-	return 0;
+    // Stop motor loops
+    Motor::stop();
+    // Detach the threads (or join if appropriate)
+    motorSpeedThread.detach();
+    motorPosThread.detach();
+
+    return 0;
 }
