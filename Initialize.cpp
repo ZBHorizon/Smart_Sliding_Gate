@@ -8,6 +8,9 @@
 // Bring selected symbols into the global scope (optional, based on your coding guidelines)
 using std::runtime_error;
 using std::lock_guard;
+static std::mutex i2c_mutex;
+static int i2c_fd;           //!< File descriptor for I2C communication.
+static float current_lsb;    //!< Current LSB (in A per bit).
 
 //========================================================================
 // INA226 Class Implementation

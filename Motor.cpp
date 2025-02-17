@@ -8,6 +8,7 @@
 #include <chrono>
 #include <stdexcept>
 #include <Motor.hpp>
+#include <condition_variable>
 
 // WiringPi includes (Raspberry Pi)
 #include <wiringPi.h>
@@ -19,153 +20,135 @@ namespace SlidingGate {
 
 //! Mutex to protect all static motor data.
 static std::mutex motor_mutex;
+// Neue condition_variable zur Synchronisation der Positionsupdates
+static std::condition_variable motor_cv;
 
 //------------------------------------------------------------------------------
 // Now only provide method definitions for Motor, whose declaration is in Motor.hpp
 //------------------------------------------------------------------------------
 
-/*!
- * \brief Calculates brake time in ms based on the given speed.
- * \param speed The current speed of the motor.
- * \return The calculated brake time in milliseconds.
- */
-milliseconds Motor::calculate_brake_time(int8_t speed) {
-    uint8_t steps = std::abs(speed) / Motor::Param::step;
-    return steps * Motor::Param::motor_ramp;
+void Motor::error_handeling(){
+    auto startTime = steady_clock::now();
+    constexpr auto timeout = 60s; // Timeout anpassen wenn nötig
+    {
+        std::unique_lock<std::mutex> lock(motor_mutex);
+        error_status = Status::None;
+        // Warte, bis sich der Zustand ändert oder das Timeout erreicht ist
+        if (!motor_cv.wait_until(lock, startTime + timeout, []{ return Motor::desired_position == Motor::current_position; })) {
+            error_status = Status::Timeout;
+            return;
+        }
+        if (error_status == Status::None){
+            error_status = Status::Success;
+        }
+    }
 }
 
 /*!
  * \brief Opens the gate fully.
  */
-void Motor::open() {
-    { // lock scope only for updating shared data
+Motor::Status Motor::open() {
+    {
         std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_speed = Motor::Param::max_speed;
+        desired_position = 0;
     }
-    // Additional logic can be added here if needed
+    error_handeling();
+    return error_status;
 }
 
 /*!
  * \brief Closes the gate fully.
  */
-void Motor::close() {
+Motor::Status Motor::close() {
     {
         std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_speed = -Motor::Param::max_speed;
+        desired_position = 100;
     }
-    // Additional logic can be added here if needed
+    error_handeling();
+    return error_status;
 }
 
 /*!
  * \brief Stops the motor immediately.
  */
-void Motor::stop() {
+Motor::Status Motor::stop() {
     {
         std::lock_guard<std::mutex> lock(motor_mutex);
         desired_speed = 0;
     }
-    // Optionally, immediately cut motor power:
-    pwmWrite(Pin::PWM, 0);
+    error_handeling();
+    return error_status;
 }
 
 /*!
  * \brief Opens the gate to 50%.
  */
-void Motor::half_open() {
+Motor::Status Motor::half_open() {
     {
         std::lock_guard<std::mutex> lock(motor_mutex);
         desired_position = 50;
     }
-    move_to_position(50);
+    error_handeling();
+    return error_status;
 }
 
 /*!
- * \brief Moves the gate to a specific position (0-100%).
- * \param position The target position of the gate.
+ * \brief Moves the gate to the end position (open/close).
+ * \param state The state of the motor (open/close).
+ * \param pin The pin to read the switch state.
  */
-void Motor::move_to_position(uint8_t position) {
+void Motor::move_end_position(MotorState state, int pin) {
+    { // Lock for critical section of position update
+        std::lock_guard<std::mutex> lock(motor_mutex);
+        desired_speed = state == MotorState::Open ? (current_position > Param::near_threshold ? -Param::max_speed : -Param::calibration_speed)
+                             : (current_position < 100 - Param::near_threshold ? Param::max_speed : Param::calibration_speed);
+    }
     {
         std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_position = position;
+        if (digitalRead(pin)) {
+            desired_speed = 0;
+            if (state == MotorState::Open) {
+                current_position = 0;
+                current_position_ms = 0ms;
+            } else {
+                current_position = 100;
+                current_position_ms = time_to_open;
+            }
+        }
     }
-    move_position_time_based(current_position, desired_position);
 }
 
 /*!
- * \brief Moves from current_position to target_position using the time-based offset approach.
- *        This function will block until target_position is reached or until desired_position changes.
- * \param start_pos The starting position of the gate.
- * \param target_pos The target position of the gate.
+ * \brief Updates the current position of the gate.
  */
-void Motor::move_position_time_based(std::uint8_t start_pos, std::uint8_t target_pos) {
-    if (start_pos == target_pos)
-        return;
+void Motor::update_current_position() {
+    std::lock_guard<std::mutex> lock(motor_mutex);
 
-    milliseconds start_time_ms = (time_to_open * start_pos) / 100;
-    milliseconds end_time_ms = (time_to_open * target_pos) / 100;
+    // Calculate how the gate is been moving
+    time_point now = steady_clock::now();
+    milliseconds elapsed = duration_cast<milliseconds>(now - start_timestamp);
 
-    bool moving_forward = (target_pos > start_pos);
-    {   // Set initial speed inside a short lock scope
-        std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_speed = moving_forward ? Motor::Param::max_speed : -Motor::Param::max_speed;
+    current_position_ms = elapsed + start_position_ms;
+
+    // Calculate current position in percentage 
+    if (motor_state == MotorState::Opening) {
+        if (digitalRead(Pin::OPEN_SWITCH)) {
+            current_position = 100;
+            current_position_ms = time_to_open;
+        } else {
+        current_position = (current_position_ms.count() * 100) / time_to_open.count();
+}
+    }     else if (motor_state == MotorState::Closing) {
+        if (digitalRead(Pin::CLOSE_SWITCH)) {
+            current_position = 0;
+            current_position_ms = 0ms;
+        } else {
+        current_position = 100 - (current_position_ms.count() * 100) / time_to_close.count();
+
+        }
     }
-
-    auto motion_start = steady_clock::now();
-    while (true) {
-        { // briefly acquire lock to check for changes
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            if (desired_position != target_pos)
-                break;
-        }
-
-        auto now = steady_clock::now();
-        auto delta = duration_cast<milliseconds>(now - motion_start).count();
-        long long total_ms = static_cast<long long>(time_to_open.count());
-        long long cur_offset = static_cast<long long>(start_time_ms.count());
-        long long current_time_in_ms = moving_forward ? (cur_offset + delta)
-                                                     : (cur_offset - delta);
-        if (current_time_in_ms < 0)
-            current_time_in_ms = 0;
-        if (current_time_in_ms > total_ms)
-            current_time_in_ms = total_ms;
-
-        milliseconds brake_time = calculate_brake_time(Motor::Param::max_speed);
-        long long target_offset_ms = end_time_ms.count();
-        long long distance_to_target = moving_forward
-                                       ? (target_offset_ms - current_time_in_ms)
-                                       : (current_time_in_ms - target_offset_ms);
-        if (distance_to_target < 0)
-            distance_to_target = 0;
-        if (distance_to_target < brake_time.count()) {
-            {
-                std::lock_guard<std::mutex> lock(motor_mutex);
-                desired_speed = moving_forward ? 10 : -10;
-            }
-        }
-
-        long long new_pos = (current_time_in_ms * 100LL) / total_ms;
-        if (new_pos < 0) new_pos = 0;
-        if (new_pos > 100) new_pos = 100;
-        { 
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            current_position = static_cast<std::uint8_t>(new_pos);
-        }
-
-        { // Check if target reached using a brief lock
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            if ((moving_forward && current_position >= target_pos) ||
-                (!moving_forward && current_position <= target_pos)) {
-                current_position = target_pos;
-                break;
-            }
-        }
-        std::this_thread::sleep_for(1ms); // sleep outside lock
-    }
-    { // ensure clean stop
-        std::lock_guard<std::mutex> lock(motor_mutex);
-        if (current_position == target_pos)
-            desired_speed = 0;
-    }
+    // Signalisiere alle wartenden Threads, dass sich current_position geändert hat.
+    motor_cv.notify_all();
 }
 
 /*!
@@ -174,93 +157,59 @@ void Motor::move_position_time_based(std::uint8_t start_pos, std::uint8_t target
  */
 void Motor::motor_position_loop() {
     while (true) {
-        {
+        uint8_t local_desired, local_current;
+        { // Lese den aktuellen Zustand unter Lock
             std::lock_guard<std::mutex> lock(motor_mutex);
-            if (current_position == desired_position) {
-                // release lock and then sleep
-                // (lock_guard goes out of scope)
-                ;
-            }
+            local_desired = desired_position;
+            local_current = current_position;
         }
-        std::this_thread::sleep_for(200ms);
+        if (local_desired == local_current) {
+            std::this_thread::sleep_for(200ms);
+            continue;
+        }
 
-        {   // Lock for critical section of position update
+        // Aktualisiere Position
+        update_current_position();
+
+        { // Lese den (möglicherweise aktualisierten) desired_position
             std::lock_guard<std::mutex> lock(motor_mutex);
-            if (desired_position == 0) {
-                const std::uint8_t near_threshold = 5;
-                if (current_position > near_threshold) {
-                    std::uint8_t temp_target = near_threshold;
-                    desired_speed = -Motor::Param::max_speed;
-                    // release lock while waiting:
-                    // (lock_guard ends)
-                    move_position_time_based(current_position, temp_target);
-                }
-            }
+            local_desired = desired_position;
         }
-        {   // Final slow approach for closed position outside lock
-            {
-                std::lock_guard<std::mutex> lock(motor_mutex);
-                if (desired_position == 0) {
-                    desired_speed = -10;
-                }
-            }
-            while (true) {
-                if (digitalRead(Pin::CLOSE_SWITCH))
-                    break;
-                {   // Check intermittently if desired_position changed
-                    std::lock_guard<std::mutex> lock(motor_mutex);
-                    if (desired_position != 0)
-                        break;
-                }
-                std::this_thread::sleep_for(1ms);
-            }
-            {
-                std::lock_guard<std::mutex> lock(motor_mutex);
-                desired_speed = 0;
-                current_position = 0;
-            }
+        if (local_desired == 100) {
+            move_end_position(MotorState::Open, Pin::OPEN_SWITCH);
+            std::this_thread::sleep_for(1ms);
+            continue;
+        } else if (local_desired == 0) {
+            move_end_position(MotorState::Close, Pin::CLOSE_SWITCH);
+            std::this_thread::sleep_for(1ms);
             continue;
         }
-        {   // Similar handling for fully OPEN (100%)
+        bool direction = (local_desired > local_current);
+        {   // Setze initialen Geschwindigkeitswert
             std::lock_guard<std::mutex> lock(motor_mutex);
-            if (desired_position == 100) {
-                const std::uint8_t near_threshold = 95;
-                if (current_position < near_threshold) {
-                    std::uint8_t temp_target = near_threshold;
-                    desired_speed = Motor::Param::max_speed;
-                    // release lock while moving:
-                    // (lock_guard ends)
-                    move_position_time_based(current_position, temp_target);
-                }
-            }
+            desired_speed = direction ? Param::max_speed : -Param::max_speed;
         }
-        {
-            {
-                std::lock_guard<std::mutex> lock(motor_mutex);
-                if (desired_position == 100)
-                    desired_speed = 10;
-            }
-            while (true) {
-                if (digitalRead(Pin::OPEN_SWITCH))
-                    break;
-                {
-                    std::lock_guard<std::mutex> lock(motor_mutex);
-                    if (desired_position != 100)
-                        break;
-                }
-                std::this_thread::sleep_for(1ms);
-            }
-            {
+
+        // Calculate the time it takes to brake the motor at current speed
+        milliseconds brake_time = (abs(current_speed) / Param::step) * Param::motor_ramp;
+        
+        // Calculate the target position in milliseconds from procentual position
+        milliseconds target_ms = (direction ? time_to_open : time_to_close) * desired_position / 100;
+            
+        milliseconds time_to_target = target_ms - current_position_ms;
+                                            
+        if (time_to_target < brake_time) {
+            { // Lock for short section of position update
                 std::lock_guard<std::mutex> lock(motor_mutex);
                 desired_speed = 0;
-                current_position = 100;
+                if  (target_ms <= current_position_ms) {
+                    current_speed = 0;
+                    desired_position = current_position;
+                }
             }
-            continue;
-        }
-        // For partial move (1..99%), simply call the time-based approach:
-        move_position_time_based(current_position, desired_position);
-        std::this_thread::sleep_for(1ms);
-    }
+        }   
+        std::this_thread::sleep_for(1ms); // Sleep outside lock
+    } 
 }
 
 /*!
@@ -272,16 +221,37 @@ void Motor::motor_speed_loop() {
     static bool overcurrent_active = false;
 
     while (true) {
-        { // short locking for read conditions
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            if (desired_speed == 0 && current_speed == 0) {
-                // release lock then sleep
-                ;
+        { // Kurzer critical section zum Aktualisieren des Motorzustands
+            std::unique_lock<std::mutex> lock(motor_mutex);
+            if (desired_speed == 0 && current_speed == 0) {  
+                if (motor_state != MotorState::None) {
+                    stop_timestamp = steady_clock::now();
+                    motor_state = MotorState::None;
+                }
+            }
+            else if (desired_speed < 0 && current_speed < 0 && motor_state != MotorState::Closing) {
+                motor_state = MotorState::Closing;
+                start_timestamp = steady_clock::now();
+                start_position_ms = time_to_close * current_position / 100;
+            }
+            else if (desired_speed > 0 && current_speed > 0 && motor_state != MotorState::Opening) {
+                motor_state = MotorState::Opening;
+                start_timestamp = steady_clock::now();
+                start_position_ms = time_to_open * current_position / 100;
             }
         }
-        std::this_thread::sleep_for(200ms);
+        
+        { // Prüfen ob Motor in Ruhe ist und externen Sleep ausführen (kein manuelles Unlock)
+            std::unique_lock<std::mutex> lock(motor_mutex);
+            if (desired_speed == 0 && current_speed == 0) {
+                // Lock wird automatisch am Blockende freigegeben.
+                std::this_thread::sleep_for(200ms);
+                continue;
+            }
+        }
+        
 
-        { // Check gate limit conditions (lock briefly)
+        { // Check end switches
             std::lock_guard<std::mutex> lock(motor_mutex);
             if ((current_speed > 0 && digitalRead(Pin::OPEN_SWITCH)) ||
                 (desired_speed < 0 && digitalRead(Pin::CLOSE_SWITCH))) {
@@ -291,8 +261,10 @@ void Motor::motor_speed_loop() {
                 continue;
             }
         }
-        { // Check light barrier outside lock
+        
+        { // Check light barrier und weitere Anpassungen
             if (current_speed > 0 && digitalRead(Pin::LIGHT_BARRIER)) {
+                error_status = Status::LightBarrier;
                 {
                     std::lock_guard<std::mutex> lock(motor_mutex);
                     current_speed = 0;
@@ -304,22 +276,23 @@ void Motor::motor_speed_loop() {
                 }
             }
         }
-
-        {
+        
+        { //check overcurrent
             std::lock_guard<std::mutex> lock(motor_mutex);
             current_current = INA226::read_current();
         }
-
-        auto now = steady_clock::now();
+        
         {
             std::lock_guard<std::mutex> lock(motor_mutex);
-            if (current_current > Motor::Param::CURRENT_THRESHOLD) {
+            if (current_current > Motor::Param::current_threshold) {
+                time_point now = steady_clock::now();
                 if (!overcurrent_active) {
                     overcurrent_active = true;
                     overcurrent_start = now;
                 } else if (duration_cast<milliseconds>(now - overcurrent_start) >= Motor::Param::overcurrent_duration) {
                     current_speed = 0;
                     pwmWrite(Pin::PWM, 0);
+                    error_status = Status::Overcurrent;
                     if (current_speed > 0)
                         desired_speed = 0;
                     else if (current_speed < 0)
@@ -331,7 +304,7 @@ void Motor::motor_speed_loop() {
             }
         }
 
-        {
+        { //ramp up/down speed
             std::lock_guard<std::mutex> lock(motor_mutex);
             if (current_speed != desired_speed) {
                 if (std::abs(current_speed - desired_speed) > Motor::Param::tolerance) {

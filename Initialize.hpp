@@ -25,10 +25,7 @@ namespace SlidingGate {
         static int16_t read_current();
 
     private:
-        static int i2c_fd;           //!< File descriptor for I2C communication.
-        static float current_lsb;    //!< Current LSB (in A per bit).
-        static std::mutex i2c_mutex; //!< Mutex for thread-safe I2C operations.
-
+        
         //! @brief Reads a 16-bit register from the INA226 and converts endianness.
         //! @param reg_address Register address.
         //! @return The 16-bit value read from the sensor.
