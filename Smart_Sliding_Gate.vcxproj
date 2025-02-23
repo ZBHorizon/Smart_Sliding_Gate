@@ -84,7 +84,7 @@
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
-      <CppLanguageStandard>c++20</CppLanguageStandard>
+      <CppLanguageStandard>c++2a</CppLanguageStandard>
     </ClCompile>
     <Link>
       <LibraryDependencies>wiringPi</LibraryDependencies>
