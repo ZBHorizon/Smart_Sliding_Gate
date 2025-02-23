@@ -1,3 +1,8 @@
+/**
+ * @file Motor.hpp
+ * @brief Deklaration der Motor-Klasse zur Steuerung des Schiebetors.
+ */
+
 #pragma once
 #include <cstdint>
 #include <chrono>
@@ -5,99 +10,114 @@ using namespace std::chrono;
 
 namespace SlidingGate {
 
-    class Motor {
-    public:
-        // Enum for return status
-        enum class Status {
-            Success,
-            Overcurrent,
-            LightBarrier,
-            Timeout,
-            Error,
-            None
-        };
+/**
+ * @brief Steuert den Motor des Schiebetors.
+ */
+class Motor {
+public:
+    /**
+     * @brief Endlosschleife, in der der Motor gesteuert wird.
+     */
+    static void motor_loop(); 
 
-        // Basic control methods
-        static Status open();          // Opens the gate fully
-        static Status close();         // Closes the gate fully
-        static Status stop();          // Stops the motor immediately
-        static Status half_open();     // Opens the gate to 50%
-        static Status move_to_position(uint8_t position); // Moves the gate to a specific position (0-100%)
+    /**
+     * @brief Führt die Kalibrierung der Öffnungs-/Schließzeiten durch.
+     */
+    static void calibrate_timing();
 
-        // Loop methods for threads
-        static void motor_speed_loop(); // Continuously adjusts motor speed to match desired speed
-        static void motor_position_loop(); // Continuously adjusts motor position to match desired position
+    /**
+     * @brief Liest die aktuelle Geschwindigkeit des Motors.
+     * @return aktuelle Geschwindigkeit
+     */
+    static float read_speed();
 
-        // Calibration (if needed)
-        static void calibrate_timing(); // Calibrates the timing for opening and closing the gate
+    /**
+     * @brief Liest die aktuelle Position des Motors.
+     * @return aktuelle Position in Prozent
+     */
+    static float read_position();
 
-        // Other helper methods declared in implementation...
-    private:
-        // Internal static state variables
+    /**
+     * @brief Prüft, ob der Motor kalibriert ist.
+     * @return true, wenn der Motor kalibriert ist
+     */
+    static bool is_calibrated();
 
-        // Desired speed of the motor (set by control methods)
-        inline static int8_t desired_speed = 0;
-        // Current speed of the motor (updated in motor_speed_loop)
-        inline static int8_t current_speed = 0;
-        // Desired position of the gate (percentage, 0-100)
-        inline static uint8_t desired_position = 0;
-        // Current position of the gate (percentage, 0-100)
-        inline static uint8_t current_position = 0;
-        // Time required to fully open the gate (milliseconds) during calibration
-        inline static milliseconds time_to_open = 0ms;
-        // Time required to fully close the gate (milliseconds) during calibration
-        inline static milliseconds time_to_close = 0ms;
-        // Flag indicating whether calibration is complete
-        inline static bool is_calibrated = false;
-        // Current measured by the INA226 sensor in mA
-        inline static uint16_t current_current = 0;
+    static std::condition_variable motor_cv; ///< Condition Variable für Motorsteuerung
 
-        inline static Status error_status = Status::Success;
+private:
+    // Interne statische Variablen
+    inline static float _actual_speed = 0.0f;      ///< Aktuelle Geschwindigkeit
+    inline static float _actual_position = 0.0f;     ///< Aktuelle Position (in Prozent)
+    inline static milliseconds _time_to_open = 0ms;  ///< Zeit zum vollständigen Öffnen (ms)
+    inline static milliseconds _time_to_close = 0ms; ///< Zeit zum vollständigen Schließen (ms)
+    inline static bool _is_calibrated = false;       ///< Flag, ob Kalibrierung abgeschlossen
 
-        // Fehlende Deklarationen ergänzen:
-        enum class MotorState {
-            Open,
-            Close,
-            Opening,
-            Closing,
-            None
-        };
+    static bool _overcurrent_active;                ///< Flag für Überstrom
+    inline static bool _overcurrent_active = false;  ///< Initialisierung
 
-        inline static MotorState motor_state = MotorState::None;
-        inline static time_point<steady_clock> start_timestamp;
-        inline static time_point<steady_clock> stop_timestamp;
-        inline static milliseconds start_position_ms = 0ms;
-        inline static milliseconds current_position_ms = 0ms;
-
-        // Deklaration von Hilfsfunktionen:
-        static void error_handeling(); // Handles errors during motor operation
-        static milliseconds calculate_brake_time(int8_t speed); // Calculates the brake time based on speed
-        static void move_position_time_based(uint8_t start_pos, uint8_t target_pos); // Moves the gate based on time
-
-        // Fehlende Funktionen:
-        static void update_current_position();
-        static void move_end_position(MotorState state, int pin);
-
-        // Parameters for timing and speed control; adjust as needed.
-        struct Param {
-            // Time delay per speed step 
-            inline static milliseconds motor_ramp = 1ms;
-            // Speed used in calibration (positive = forward, negative = backward)
-            inline static uint8_t calibration_speed = 30;
-            // Maximum motor speed
-            inline static uint8_t max_speed = 100;
-            // Speed threshold for range of direction change
-            inline static uint8_t direction_threshold = 2;
-            // Step size for speed adjustments
-            inline static uint8_t step = 1;
-            // Tolerance for speed adjustments
-            inline static uint8_t tolerance = 3;
-            // Current threshold for overcurrent detection (in mA)
-            static constexpr uint16_t current_threshold = 5000; // 5A in mA
-            // Duration for overcurrent detection (milliseconds)
-            inline static milliseconds overcurrent_duration = 500ms;
-            inline static uint8_t near_threshold = 5;
-        };
+    /**
+     * @brief Zustände des Motors.
+     */
+    enum class MotorState {
+        Opening,   ///< Tor wird geöffnet
+        Closing,   ///< Tor wird geschlossen
+        None       ///< Kein Vorgang
     };
+
+    inline static MotorState _motor_state = MotorState::None; ///< Aktueller Motorzustand
+    static time_point<steady_clock> _start_timestamp;    ///< Startzeitpunkt der Bewegung
+    static time_point<steady_clock> _stop_timestamp;     ///< Endzeitpunkt der Bewegung
+    inline static milliseconds _start_position_ms = 0ms;        ///< Startrichtung in Zeit
+
+    /**
+     * @brief Aktualisiert die aktuelle Position des Tors.
+     */
+    static void update_current_position();
+
+    /**
+     * @brief Prüft, ob ein Überstrom vorliegt.
+     */
+    static void check_for_overcurrent();
+
+    /**
+     * @brief Prüft, ob der Lichtschranken-Sensor aktiv ist.
+     */
+    static void check_light_barrier();
+
+    /**
+     * @brief Prüft, ob die Endschalter aktiviert sind.
+     */
+    static void check_end_switches();
+
+    /**
+     * @brief Aktualisiert den internen Zustand des Motors.
+     */
+    static void update_states();
+
+    /**
+     * @brief Setzt die Motorgeschwindigkeit.
+     * @param speed Zielgeschwindigkeit.
+     */
+    static void set_speed(float speed);
+
+    /**
+     * @brief Aktualisiert die Motorsteuerung basierend auf Position.
+     * @return true, wenn ein Fehlerzustand erkannt wurde.
+     */
+    static bool update_motor();
+
+    // Überstrom-Mechanismus
+    static steady_clock::time_point overcurrent_start;
+
+    /**
+     * @brief Parameter für Timing und Geschwindigkeitsregelung.
+     */
+    struct Param {
+        inline static float calibration_speed = 0.30f;  ///< Kalibrierspeed
+        static constexpr uint16_t current_threshold = 5000;  ///< Überstrom-Schwellenwert (mA)
+        inline static milliseconds overcurrent_duration = 100ms; ///< Dauer zur Bestätigung des Überstroms
+    };
+};
 
 } // namespace SlidingGate

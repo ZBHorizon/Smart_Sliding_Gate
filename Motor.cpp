@@ -1,4 +1,9 @@
-﻿#include <iostream>
+﻿/**
+ * @file Motor.cpp
+ * @brief Implementierung der Motor-Klasse.
+ */
+
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <cstdint>
@@ -9,320 +14,173 @@
 #include <stdexcept>
 #include <Motor.hpp>
 #include <condition_variable>
+#include <list>
+#include <algorithm>
 
 // WiringPi includes (Raspberry Pi)
 #include <wiringPi.h>
 #include <Initialize.hpp>
+#include <INA226.hpp>
+#include <job.hpp>
 
 using namespace std::chrono;
 
 namespace SlidingGate {
-
 //! Mutex to protect all static motor data.
 static std::mutex motor_mutex;
-// Neue condition_variable zur Synchronisation der Positionsupdates
-static std::condition_variable motor_cv;
 
-//------------------------------------------------------------------------------
-// Now only provide method definitions for Motor, whose declaration is in Motor.hpp
-//------------------------------------------------------------------------------
-
-void Motor::error_handeling(){
-    auto startTime = steady_clock::now();
-    constexpr auto timeout = 60s; // Timeout anpassen wenn nötig
-    {
-        std::unique_lock<std::mutex> lock(motor_mutex);
-        error_status = Status::None;
-        // Warte, bis sich der Zustand ändert oder das Timeout erreicht ist
-        if (!motor_cv.wait_until(lock, startTime + timeout, []{ return Motor::desired_position == Motor::current_position; })) {
-            error_status = Status::Timeout;
-            return;
-        }
-        if (error_status == Status::None){
-            error_status = Status::Success;
+void Motor::update_states() {
+    if (_actual_speed == 0) {  
+        if (_motor_state != MotorState::None) {
+            _stop_timestamp = steady_clock::now();
+            _motor_state = MotorState::None;
         }
     }
+    else if (_actual_speed < 0 && _motor_state != MotorState::Closing) {
+        _motor_state = MotorState::Closing;
+        _start_timestamp = steady_clock::now();
+        _start_position_ms = duration_cast<milliseconds>(_time_to_close * _actual_position);
+    }
+    else if (_actual_speed > 0 && _motor_state != MotorState::Opening) {
+        _motor_state = MotorState::Opening;
+        _start_timestamp = steady_clock::now();
+        _start_position_ms = duration_cast<milliseconds>(_time_to_open * _actual_position);
+    }
 }
 
-/*!
- * \brief Opens the gate fully.
- */
-Motor::Status Motor::open() {
-    {
-        std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_position = 0;
+void Motor::check_end_switches() {
+    if ((_motor_state == MotorState::Opening && digitalRead(Pin::OPEN_SWITCH)) ||
+        (_motor_state == MotorState::Closing && digitalRead(Pin::CLOSE_SWITCH))) {
+        set_speed(0.0f);
+        job::delete_job();
     }
-    error_handeling();
-    return error_status;
 }
 
-/*!
- * \brief Closes the gate fully.
- */
-Motor::Status Motor::close() {
-    {
-        std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_position = 100;
+void Motor::check_light_barrier() {
+    // Check if light barrier active when closing
+    if (_motor_state == MotorState::Closing && digitalRead(Pin::LIGHT_BARRIER)) { 
+        set_speed(0.0f);
+        job::keyframe Open { 
+            .speed = 0.0f,
+            .position = 1.0f
+        };
+        job::create_job(Open);
     }
-    error_handeling();
-    return error_status;
+    
 }
 
-/*!
- * \brief Stops the motor immediately.
- */
-Motor::Status Motor::stop() {
-    {
-        std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_speed = 0;
+void Motor::check_for_overcurrent(){
+    if (INA226::read_current() > Param::current_threshold) {
+        //if motor is after acceleration phase then stop instantly
+        if (std::abs(_actual_speed) >= 0.95f) {
+            _overcurrent_active = true;
+        }
+        //otherwise check if overcurrent is active for a certain duration
+        time_point now = steady_clock::now();
+        if (!_overcurrent_active) {
+            _overcurrent_active = true;
+            overcurrent_start = now;
+        } else if (duration_cast<milliseconds>(now - overcurrent_start) >= Param::overcurrent_duration) {
+            _overcurrent_active = false;
+        }
+    } else {
+        _overcurrent_active = false;
     }
-    error_handeling();
-    return error_status;
-}
-
-/*!
- * \brief Opens the gate to 50%.
- */
-Motor::Status Motor::half_open() {
-    {
-        std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_position = 50;
-    }
-    error_handeling();
-    return error_status;
-}
-
-/*!
- * \brief Moves the gate to the end position (open/close).
- * \param state The state of the motor (open/close).
- * \param pin The pin to read the switch state.
- */
-void Motor::move_end_position(MotorState state, int pin) {
-    { // Lock for critical section of position update
-        std::lock_guard<std::mutex> lock(motor_mutex);
-        desired_speed = state == MotorState::Open ? (current_position > Param::near_threshold ? -Param::max_speed : -Param::calibration_speed)
-                             : (current_position < 100 - Param::near_threshold ? Param::max_speed : Param::calibration_speed);
-    }
-    {
-        std::lock_guard<std::mutex> lock(motor_mutex);
-        if (digitalRead(pin)) {
-            desired_speed = 0;
-            if (state == MotorState::Open) {
-                current_position = 0;
-                current_position_ms = 0ms;
-            } else {
-                current_position = 100;
-                current_position_ms = time_to_open;
-            }
+    if (_overcurrent_active) {
+        if (_motor_state != MotorState::Closing) {
+        set_speed(0.0f);
+        job::keyframe Open { 
+            .speed = 0.0f,
+            .position = 1.0f
+        };
+        job::create_job(Open);
+        } else {
+            set_speed(0.0f);
+            job::delete_job();
         }
     }
 }
-
 /*!
  * \brief Updates the current position of the gate.
  */
 void Motor::update_current_position() {
-    std::lock_guard<std::mutex> lock(motor_mutex);
-
     // Calculate how the gate is been moving
     time_point now = steady_clock::now();
-    milliseconds elapsed = duration_cast<milliseconds>(now - start_timestamp);
-
-    current_position_ms = elapsed + start_position_ms;
+    milliseconds _current_position_ms = duration_cast<milliseconds>(now - _start_timestamp) + _start_position_ms;
 
     // Calculate current position in percentage 
-    if (motor_state == MotorState::Opening) {
+    if (_motor_state == MotorState::Opening) {
         if (digitalRead(Pin::OPEN_SWITCH)) {
-            current_position = 100;
-            current_position_ms = time_to_open;
+            _actual_position = 1.0f;
         } else {
-        current_position = (current_position_ms.count() * 100) / time_to_open.count();
-}
-    }     else if (motor_state == MotorState::Closing) {
-        if (digitalRead(Pin::CLOSE_SWITCH)) {
-            current_position = 0;
-            current_position_ms = 0ms;
-        } else {
-        current_position = 100 - (current_position_ms.count() * 100) / time_to_close.count();
-
-        }
-    }
-    // Signalisiere alle wartenden Threads, dass sich current_position geändert hat.
-    motor_cv.notify_all();
-}
-
-/*!
- * \brief Continuously adjusts motor position to match desired position.
- *        This function is meant to run in a dedicated thread.
- */
-void Motor::motor_position_loop() {
-    while (true) {
-        uint8_t local_desired, local_current;
-        { // Lese den aktuellen Zustand unter Lock
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            local_desired = desired_position;
-            local_current = current_position;
-        }
-        if (local_desired == local_current) {
-            std::this_thread::sleep_for(200ms);
-            continue;
-        }
-
-        // Aktualisiere Position
-        update_current_position();
-
-        { // Lese den (möglicherweise aktualisierten) desired_position
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            local_desired = desired_position;
-        }
-        if (local_desired == 100) {
-            move_end_position(MotorState::Open, Pin::OPEN_SWITCH);
-            std::this_thread::sleep_for(1ms);
-            continue;
-        } else if (local_desired == 0) {
-            move_end_position(MotorState::Close, Pin::CLOSE_SWITCH);
-            std::this_thread::sleep_for(1ms);
-            continue;
-        }
-        bool direction = (local_desired > local_current);
-        {   // Setze initialen Geschwindigkeitswert
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            desired_speed = direction ? Param::max_speed : -Param::max_speed;
-        }
-
-        // Calculate the time it takes to brake the motor at current speed
-        milliseconds brake_time = (abs(current_speed) / Param::step) * Param::motor_ramp;
-        
-        // Calculate the target position in milliseconds from procentual position
-        milliseconds target_ms = (direction ? time_to_open : time_to_close) * desired_position / 100;
-            
-        milliseconds time_to_target = target_ms - current_position_ms;
-                                            
-        if (time_to_target < brake_time) {
-            { // Lock for short section of position update
-                std::lock_guard<std::mutex> lock(motor_mutex);
-                desired_speed = 0;
-                if  (target_ms <= current_position_ms) {
-                    current_speed = 0;
-                    desired_position = current_position;
-                }
-            }
-        }   
-        std::this_thread::sleep_for(1ms); // Sleep outside lock
-    } 
-}
-
-/*!
- * \brief Continuously adjusts motor speed to match desired speed.
- *        This function is meant to run in a dedicated thread.
- */
-void Motor::motor_speed_loop() {
-    static steady_clock::time_point overcurrent_start;
-    static bool overcurrent_active = false;
-
-    while (true) {
-        { // Kurzer critical section zum Aktualisieren des Motorzustands
-            std::unique_lock<std::mutex> lock(motor_mutex);
-            if (desired_speed == 0 && current_speed == 0) {  
-                if (motor_state != MotorState::None) {
-                    stop_timestamp = steady_clock::now();
-                    motor_state = MotorState::None;
-                }
-            }
-            else if (desired_speed < 0 && current_speed < 0 && motor_state != MotorState::Closing) {
-                motor_state = MotorState::Closing;
-                start_timestamp = steady_clock::now();
-                start_position_ms = time_to_close * current_position / 100;
-            }
-            else if (desired_speed > 0 && current_speed > 0 && motor_state != MotorState::Opening) {
-                motor_state = MotorState::Opening;
-                start_timestamp = steady_clock::now();
-                start_position_ms = time_to_open * current_position / 100;
-            }
-        }
-        
-        { // Prüfen ob Motor in Ruhe ist und externen Sleep ausführen (kein manuelles Unlock)
-            std::unique_lock<std::mutex> lock(motor_mutex);
-            if (desired_speed == 0 && current_speed == 0) {
-                // Lock wird automatisch am Blockende freigegeben.
-                std::this_thread::sleep_for(200ms);
-                continue;
-            }
-        }
-        
-
-        { // Check end switches
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            if ((current_speed > 0 && digitalRead(Pin::OPEN_SWITCH)) ||
-                (desired_speed < 0 && digitalRead(Pin::CLOSE_SWITCH))) {
-                current_speed = 0;
-                desired_speed = 0;
-                pwmWrite(Pin::PWM, 0);
-                continue;
-            }
-        }
-        
-        { // Check light barrier und weitere Anpassungen
-            if (current_speed > 0 && digitalRead(Pin::LIGHT_BARRIER)) {
-                error_status = Status::LightBarrier;
-                {
-                    std::lock_guard<std::mutex> lock(motor_mutex);
-                    current_speed = 0;
-                }
-                pwmWrite(Pin::PWM, 0);
-                {
-                    std::lock_guard<std::mutex> lock(motor_mutex);
-                    desired_speed = -30;
-                }
-            }
-        }
-        
-        { //check overcurrent
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            current_current = INA226::read_current();
-        }
-        
-        {
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            if (current_current > Motor::Param::current_threshold) {
-                time_point now = steady_clock::now();
-                if (!overcurrent_active) {
-                    overcurrent_active = true;
-                    overcurrent_start = now;
-                } else if (duration_cast<milliseconds>(now - overcurrent_start) >= Motor::Param::overcurrent_duration) {
-                    current_speed = 0;
-                    pwmWrite(Pin::PWM, 0);
-                    error_status = Status::Overcurrent;
-                    if (current_speed > 0)
-                        desired_speed = 0;
-                    else if (current_speed < 0)
-                        desired_speed = 10;
-                    overcurrent_active = false;
-                }
+            float position = (_current_position_ms.count() * 100) / _time_to_open.count();
+            if (position < 1.0f) {
+                _actual_position = position;
             } else {
-                overcurrent_active = false;
+                _actual_position = 0.95f;
+            }
+}
+    }else if (_motor_state == MotorState::Closing) {
+        if (digitalRead(Pin::CLOSE_SWITCH)) {
+            _actual_position = 0.0f;
+        } else {
+            float position = 100.0f - (_current_position_ms.count() * 100.0f) / _time_to_close.count();
+            if (position > 0.0f) {
+            _actual_position = position;
+            } else {
+                _actual_position = 0.05f;
             }
         }
-
-        { //ramp up/down speed
-            std::lock_guard<std::mutex> lock(motor_mutex);
-            if (current_speed != desired_speed) {
-                if (std::abs(current_speed - desired_speed) > Motor::Param::tolerance) {
-                    if (std::abs(current_speed) < Motor::Param::direction_threshold) {
-                        digitalWrite(Pin::DIRECTION, (desired_speed >= 0 ? LOW : HIGH));
-                    }
-                    if (current_speed < desired_speed)
-                        current_speed += Motor::Param::step;
-                    else if (current_speed > desired_speed)
-                        current_speed -= Motor::Param::step;
-                } else {
-                    current_speed = desired_speed;
-                }
-                pwmWrite(Pin::PWM, std::abs(current_speed));
-            }
-        }
-        std::this_thread::sleep_for(Motor::Param::motor_ramp);
     }
+}
+float Motor::read_position(){
+    return _actual_position;
+}
+void Motor::motor_loop() {
+    while (true) {
+        //condition variable wait check if job set. muss solange schlafen bis ein neuer job gesetzt wurde wenn kein job mehr anliegt
+        std::unique_lock<std::mutex> lock(motor_mutex);
+        motor_cv.wait(lock,job::is_job_active());
+        check_end_switches();
+        check_light_barrier();
+        check_for_overcurrent();
+
+        if (update_motor()) {
+            job::delete_job();
+            continue;
+        } 
+        // sleep für 1ms (davor muss der mutex unlocken und danach wieder locken)
+        lock.unlock();
+        std::this_thread::sleep_for(10ms);
+    }
+}
+
+
+bool Motor::update_motor() {
+    update_current_position();
+    float speed = job::get_speed(_actual_position);
+    if (std::isnan(speed)) {
+        return true;
+    }
+    set_speed(speed);
+    return false;
+}
+
+void Motor::set_speed(float speed){
+    digitalWrite(Pin::DIRECTION, (speed >= 0 ? LOW : HIGH));
+    //set speed
+    pwmWrite(Pin::PWM, std::abs(speed));
+    _actual_speed = speed;
+    update_states();
+}
+
+float Motor::read_speed(){
+    return _actual_speed;
+}
+
+bool Motor::is_calibrated() {
+    std::lock_guard<std::mutex> lock(motor_mutex);
+    return _is_calibrated;
 }
 
 /*!
@@ -333,9 +191,9 @@ void Motor::calibrate_timing() {
     auto overall_start = steady_clock::now();
     {
         std::lock_guard<std::mutex> lock(motor_mutex);
-        is_calibrated = false;
-        time_to_open = 0ms;
-        time_to_close = 0ms;
+        _is_calibrated = false;
+        _time_to_open = 0ms;
+        _time_to_close = 0ms;
     }
     enum CalibrationStep { move_to_starting_position, check_position, measure_time_to_fully_open, measure_time_to_fully_close };
     CalibrationStep calibration_step = check_position;
@@ -355,12 +213,12 @@ void Motor::calibrate_timing() {
                     calibration_step = move_to_starting_position;
             } break;
             case move_to_starting_position: {
-                { std::lock_guard<std::mutex> lock(motor_mutex); desired_speed = -Motor::Param::calibration_speed; }
+                { std::lock_guard<std::mutex> lock(motor_mutex); set_speed(-Param::calibration_speed); }
                 if (digitalRead(Pin::OPEN_SWITCH))
                     calibration_step = check_position;
             } break;
             case measure_time_to_fully_open: {
-                { std::lock_guard<std::mutex> lock(motor_mutex); desired_speed = Motor::Param::calibration_speed; }
+                { std::lock_guard<std::mutex> lock(motor_mutex); set_speed(Param::calibration_speed); }
                 auto start = steady_clock::now();
                 while (!digitalRead(Pin::OPEN_SWITCH)) {
                     if (steady_clock::now() - overall_start > minutes(1))
@@ -370,22 +228,22 @@ void Motor::calibrate_timing() {
                 auto end = steady_clock::now();
                 {
                     std::lock_guard<std::mutex> lock(motor_mutex);
-                    time_to_open = duration_cast<milliseconds>(end - start);
+                    _time_to_open = duration_cast<milliseconds>(end - start);
                 }
                 {
                     std::lock_guard<std::mutex> lock(motor_mutex);
-                    if (time_to_close != 0ms) {
-                        double factor = static_cast<double>(Motor::Param::calibration_speed) / static_cast<double>(Motor::Param::max_speed);
-                        time_to_open = duration_cast<milliseconds>(time_to_open * factor);
-                        time_to_close = duration_cast<milliseconds>(time_to_close * factor);
-                        is_calibrated = true;
+                    if (_time_to_close.count() != 0) {
+                        float factor = Param::calibration_speed; // Division durch 1.0f unnötig
+                        _time_to_open = duration_cast<milliseconds>(_time_to_open * factor);
+                        _time_to_close = duration_cast<milliseconds>(_time_to_close * factor);
+                        _is_calibrated = true;
                         return;
                     }
                 }
                 calibration_step = measure_time_to_fully_close;
             } break;
             case measure_time_to_fully_close: {
-                { std::lock_guard<std::mutex> lock(motor_mutex); desired_speed = -Motor::Param::calibration_speed; }
+                { std::lock_guard<std::mutex> lock(motor_mutex); set_speed(-Param::calibration_speed); }
                 auto start = steady_clock::now();
                 while (!digitalRead(Pin::CLOSE_SWITCH)) {
                     if (steady_clock::now() - overall_start > minutes(1))
@@ -395,12 +253,12 @@ void Motor::calibrate_timing() {
                 auto end = steady_clock::now();
                 {
                     std::lock_guard<std::mutex> lock(motor_mutex);
-                    time_to_close = duration_cast<milliseconds>(end - start);
-                    if (time_to_open != 0ms) {
-                        double factor = static_cast<double>(Motor::Param::calibration_speed) / static_cast<double>(Motor::Param::max_speed);
-                        time_to_open = duration_cast<milliseconds>(time_to_open * factor);
-                        time_to_close = duration_cast<milliseconds>(time_to_close * factor);
-                        is_calibrated = true;
+                    _time_to_close = duration_cast<milliseconds>(end - start);
+                    if (_time_to_open.count() != 0) {
+                        float factor = Param::calibration_speed;
+                        _time_to_open = duration_cast<milliseconds>(_time_to_open * factor);
+                        _time_to_close = duration_cast<milliseconds>(_time_to_close * factor);
+                        _is_calibrated = true;
                         return;
                     }
                 }
@@ -409,6 +267,5 @@ void Motor::calibrate_timing() {
         }
     }
 }
-
 } // namespace SlidingGate
 
