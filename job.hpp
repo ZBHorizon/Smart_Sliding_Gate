@@ -23,6 +23,7 @@ public:
      * @return true, wenn der Job erfolgreich erstellt wurde.
      */
     static bool create_job(keyframe target_keyframe);
+    
 
     static void stop_motor();
 
@@ -46,8 +47,8 @@ private:
 
     static constexpr float TOLERANCE = 0.01f;        ///< Positions-Toleranz
     static constexpr float RAMP_DISTANCE = 0.03f;      ///< Anfahr-/Abbremsstrecke
-    static constexpr float MINIMAL_SPEED = 0.05f;      ///< Minimalgeschwindigkeit
-
+    static constexpr float TARGET_MAX_SPEED = 1.0f; ///< Zielgeschwindigkeit: Wir gehen davon aus, dass der Zielwert 1.0 (bzw. -1.0 in Zielrichtung) ist.
+    static constexpr float MIN_SPEED = 0.05f;      ///< Mindestgeschwindigkeit
     static std::list<keyframe>::iterator current_iter; ///< Iterator auf den aktuellen Keyframe
 };
 }
