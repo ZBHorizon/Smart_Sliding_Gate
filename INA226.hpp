@@ -118,15 +118,15 @@
  *   Reset |  0 |  0  |  0  |  0  |  0  |  0  | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0
  *
  * ----------------------------------------------------------------------------
- * NOTE ON CALIBRATION AND CURRENT_LSB:
+ * NOTE ON CALIBRATION AND _CURRENT_LSB:
  * - Calibration = (0.00512) / (Current_LSB * Rshunt)
  * - Then the Current Register (0x04) stores: (ShuntVoltage * Calibration) / 2048
  *
  * ----------------------------------------------------------------------------
  * Example default usage in code:
- *   - CONFIG_VALUE = 0x4127 => Continuous Shunt+Bus, ~1.1 ms each, no averaging
- *   - CALIBRATION_VALUE = 2560 => suitable for 2mΩ, ~15A, 1mA/bit
- *   - CURRENT_LSB = 1.0f => (1 mA/bit)
+ *   - _CONFIG_VALUE = 0x4127 => Continuous Shunt+Bus, ~1.1 ms each, no averaging
+ *   - _CALIBRATION_VALUE = 2560 => suitable for 2mΩ, ~15A, 1mA/bit
+ *   - _CURRENT_LSB = 1.0f => (1 mA/bit)
  */
 
 #pragma once
@@ -171,22 +171,22 @@ namespace SlidingGate {
         static float readCurrent_mA();
 
     private:
-        static int i2c_fd;  //!< I2C file descriptor for the INA226 device.
+        inline static int _i2c_fd = -1;  //!< I2C file descriptor for the INA226 device.
         //define INA226 register addresses and constant values
-        static constexpr std::int32_t INA226_I2C_ADDRESS   = 0x40;   //!< I2C address
-        static constexpr std::int32_t CONFIG_REGISTER      = 0x00;   //!< Configuration register address
-        static constexpr std::int32_t CURRENT_REGISTER     = 0x04;   //!< Current register address
-        static constexpr std::int32_t CALIBRATION_REGISTER = 0x05;   //!< Calibration register address
+        static constexpr std::int32_t _INA226_I2C_ADDRESS   = 0x40;   //!< I2C address
+        static constexpr std::int32_t _CONFIG_REGISTER      = 0x00;   //!< Configuration register address
+        static constexpr std::int32_t _CURRENT_REGISTER     = 0x04;   //!< Current register address
+        static constexpr std::int32_t _CALIBRATION_REGISTER = 0x05;   //!< Calibration register address
 
-        static constexpr std::int8_t CONFIG_AVG         = 0b000; 
-        static constexpr std::int8_t CONFIG_VBUSCT      = 0b100; 
-        static constexpr std::int8_t CONFIG_VSHCT       = 0b100;
-        static constexpr std::int8_t CONFIG_MODE        = 0b111;
-        static constexpr std::int16_t CONFIG_VALUE = (CONFIG_AVG << 9) | (CONFIG_VBUSCT << 6) | (CONFIG_VSHCT << 3) | CONFIG_MODE; //! configuration
+        static constexpr std::int8_t _CONFIG_AVG         = 0b000; 
+        static constexpr std::int8_t _CONFIG_VBUSCT      = 0b100; 
+        static constexpr std::int8_t _CONFIG_VSHCT       = 0b100;
+        static constexpr std::int8_t _CONFIG_MODE        = 0b111;
+        static constexpr std::int16_t _CONFIG_VALUE = (_CONFIG_AVG << 9) | (_CONFIG_VBUSCT << 6) | (_CONFIG_VSHCT << 3) | _CONFIG_MODE; //! configuration
 
-        static constexpr std::int16_t CALIBRATION_VALUE    = 2560;   //!< Calibration value for 1 mA/bit with 2 mΩ shunt resistor.
-        static constexpr float CURRENT_LSB                = 1.0f;   //!< Current LSB in mA/bit.
-        static constexpr float DESIRED_MAX_CURRENT_A  = 8.0;
+        static constexpr std::int16_t _CALIBRATION_VALUE    = 2560;   //!< Calibration value for 1 mA/bit with 2 mΩ shunt resistor.
+        static constexpr float _CURRENT_LSB                = 1.0f;   //!< Current LSB in mA/bit.
+        static constexpr float _DESIRED_MAX_CURRENT_A  = 15.0;
 
         
     };
