@@ -44,20 +44,22 @@ public:
      */
     static bool is_calibrated();
 
+    inline static std::condition_variable motor_cv; ///< Condition Variable for motor control
+
 private:
     // Internal static variables
     // Definitions for non-inline static members
-    inline static std::condition_variable motor_cv; ///< Condition Variable for motor control
-    inline static std::condition_variable open_switch_cv; ///< Condition Variable
-    inline static std::condition_variable close_switch_cv; ///< Condition Variable 
+    
+    inline static std::condition_variable _open_switch_cv; ///< Condition Variable
+    inline static std::condition_variable _close_switch_cv; ///< Condition Variable 
        
-    inline static steady_clock::time_point overcurrent_start = std::chrono::steady_clock::now();  ///< Overcurrent mechanism
+    inline static steady_clock::time_point _overcurrent_start = std::chrono::steady_clock::now();  ///< Overcurrent mechanism
 
-    inline static float _actual_speed = 0.0f;      ///< Current speed
-    inline static float _actual_position = 0.0f;     ///< Current position (percentage)
-    inline static milliseconds _time_to_open = 0ms;  ///< Time to fully open (ms)
-    inline static milliseconds _time_to_close = 0ms; ///< Time to fully close (ms)
-    inline static bool _is_calibrated = false;       ///< Calibration flag
+    inline static float _actual_speed = 0.0f;      //< Current speed
+    inline static float _actual_position = 0.0f;     //< Current position (percentage)
+    inline static milliseconds _time_to_open = 0ms;  //< Time to fully open (ms)
+    inline static milliseconds _time_to_close = 0ms; //< Time to fully close (ms)
+    inline static bool _is_calibrated = false;       //< Calibration flag
 
     inline static bool _overcurrent_active = false;  ///< Initialization
 
@@ -117,15 +119,16 @@ private:
 
     static void close_switch_isr();
 
-
+    inline static bool open_switch_triggered = false;
+    inline static bool close_switch_triggered = false;
 
     /**
      * @brief Contains parameters for timing and speed regulation.
      */
-    struct Param {
-        inline static float calibration_speed = 0.30f;  ///< Calibration speed
-        static constexpr uint16_t current_threshold = 5000;  ///< Overcurrent threshold (mA)
-        inline static milliseconds overcurrent_duration = 100ms; ///< Duration to confirm overcurrent
+    struct _Param {
+        static constexpr float _CALIBRATION_SPEED = 0.30f;  ///< Calibration speed
+        static constexpr uint16_t _CURRENT_THRESHOLD = 5000;  ///< Overcurrent threshold (mA)
+        static constexpr milliseconds _OVERCURRENT_DURATION = 100ms; ///< Duration to confirm overcurrent
     };
 
 
