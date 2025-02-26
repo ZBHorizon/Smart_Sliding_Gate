@@ -5,19 +5,15 @@
 #include <cstdlib>
 #include <cmath>
 
-//TODO überall std davor schreiben
-using std::runtime_error;
-//scoped_lock benutzen oder unique_lock
-using std::lock_guard;
-
 namespace SlidingGate {
 
     //========================================================================
-    // Pin::Manager Implementation
+    // Pin Initialization Implementation
     //========================================================================
 
     bool Pin::initialize_gpio() {
         if (wiringPiSetup() == -1) {
+			std::cerr << "wiringPiSetup Failed." << std::endl;
             return false;
         }
 
