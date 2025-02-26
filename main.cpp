@@ -22,7 +22,7 @@ int main() {
     }
     */
     // Start the motor loop in a separate thread.
-    std::thread motorThread(&Motor::motor_loop);
+    std::thread motor_thread(&Motor::motor_loop);
 
     while (true) {
 
@@ -62,6 +62,6 @@ int main() {
         std::this_thread::sleep_for(500ms);
     }
 
-    motorThread.join();
+    motor_thread.join();
     return 0;
 }
