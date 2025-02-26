@@ -4,9 +4,13 @@
     <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="Motor.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="INA226.cpp" />
+    <ClCompile Include="job.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Initialize.hpp" />
     <ClInclude Include="Motor.hpp" />
+    <ClInclude Include="job.hpp" />
+    <ClInclude Include="INA226.hpp" />
   </ItemGroup>
 </Project>

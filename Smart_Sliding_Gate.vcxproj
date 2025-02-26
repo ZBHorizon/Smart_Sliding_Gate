@@ -74,12 +74,16 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="INA226.cpp" />
     <ClCompile Include="Initialize.cpp" />
+    <ClCompile Include="job.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Motor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="INA226.hpp" />
     <ClInclude Include="Initialize.hpp" />
+    <ClInclude Include="job.hpp" />
     <ClInclude Include="Motor.hpp" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">

@@ -10,21 +10,25 @@ using namespace std::chrono;
 using namespace SlidingGate;
 
 int main() {
-    // Initialize GPIO and INA226 sensor and check for errors.
+    // Initialize GPIO and INA226 sensor; check for errors.
     if (!Pin::initialize_gpio()) {
         std::cerr << "GPIO initialization failed!" << std::endl;
         return 1;
     }
+    /*
     if (!INA226::initialize()) {
         std::cerr << "INA226 initialization failed!" << std::endl;
         return 1;
     }
-
-    // Start motor loop in a separate thread.
+    */
+    // Start the motor loop in a separate thread.
     std::thread motorThread(&Motor::motor_loop);
 
     while (true) {
-        // Ask user to calibrate if not calibrated yet.
+
+		//std::cout << "Current: " << INA226::readCurrent_mA() << " mA" << std::endl;
+        
+        // Prompt user for calibration if not yet calibrated.
         if (!Motor::is_calibrated()) {
             std::cout << "Calibrate the motor? (y/n): ";
             char input;
@@ -36,8 +40,9 @@ int main() {
                 return 0;
             }
         } else {
-            // Ask user at what percentage to target the gate.
-            std::cout << "Enter the percentage to target the gate or 's' to stop: ";
+        
+            // Ask user for the target gate percentage.
+            std::cout << "Enter target gate percentage or 's' to stop: ";
             std::string input;
             std::cin >> input;
             if (input == "s") {
@@ -50,8 +55,11 @@ int main() {
                 };
                 job::create_job(target);
             }
+            
+            
         }
-        std::this_thread::sleep_for(50ms);
+         
+        std::this_thread::sleep_for(500ms);
     }
 
     motorThread.join();
