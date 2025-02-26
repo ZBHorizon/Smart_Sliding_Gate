@@ -16,6 +16,7 @@
 #include <condition_variable>
 #include <list>
 #include <algorithm>
+#include <atomic>
 
 // WiringPi includes (Raspberry Pi)
 #include <wiringPi.h>
@@ -28,7 +29,14 @@ using namespace std::chrono;
 namespace SlidingGate {
 //! Mutex to protect all static motor data.
 static std::mutex motor_mutex;
+static bool open_switch_triggered = false;
+static bool close_switch_triggered = false;
 
+
+
+/**
+ * @brief Updates the internal state of the motor based on the current speed.
+ */
 void Motor::update_states() {
     if (_actual_speed == 0) {  
         if (_motor_state != MotorState::None) {
@@ -48,17 +56,24 @@ void Motor::update_states() {
     }
 }
 
-void Motor::check_end_switches() {
+/**
+ * @brief Checks if any of the end switches are activated.
+ */
+bool Motor::check_end_switches() {
     if ((_motor_state == MotorState::Opening && digitalRead(Pin::OPEN_SWITCH)) ||
-        (_motor_state == MotorState::Closing && digitalRead(Pin::CLOSE_SWITCH))) {
-        set_speed(0.0f);
-        job::delete_job();
+        (_motor_state == MotorState::Closing && digitalRead(Pin::CLOSE_SWITCH)) || 
+        (_motor_state == MotorState::Closing && digitalRead(Pin::LIGHT_BARRIER))) {
+            return true;
     }
+    return false;
 }
 
-void Motor::check_light_barrier() {
+/**
+ * @brief Checks if the light barrier sensor is active.
+ */
+void Motor::light_barrier_isr() {
     // Check if light barrier active when closing
-    if (_motor_state == MotorState::Closing && digitalRead(Pin::LIGHT_BARRIER)) { 
+    if (_motor_state == MotorState::Closing) { 
         set_speed(0.0f);
         job::keyframe Open { 
             .speed = 0.0f,
@@ -69,8 +84,11 @@ void Motor::check_light_barrier() {
     
 }
 
+/**
+ * @brief Checks for an overcurrent condition and takes appropriate action.
+ */
 void Motor::check_for_overcurrent(){
-    if (INA226::read_current() > Param::current_threshold) {
+    if (INA226::readCurrent_mA() > Param::current_threshold) {
         //if motor is after acceleration phase then stop instantly
         if (std::abs(_actual_speed) >= 0.95f) {
             _overcurrent_active = true;
@@ -100,6 +118,7 @@ void Motor::check_for_overcurrent(){
         }
     }
 }
+
 /*!
  * \brief Updates the current position of the gate.
  */
@@ -113,37 +132,45 @@ void Motor::update_current_position() {
         if (digitalRead(Pin::OPEN_SWITCH)) {
             _actual_position = 1.0f;
         } else {
-            float position = (_current_position_ms.count() * 100) / _time_to_open.count();
-            if (position < 1.0f) {
-                _actual_position = position;
-            } else {
-                _actual_position = 0.95f;
-            }
-}
+            float position = (static_cast<float>(_current_position_ms.count()) * 100.0f) / 
+                             static_cast<float>(_time_to_open.count());
+            _actual_position = (position < 1.0f) ? position : 0.95f;
+        }
     }else if (_motor_state == MotorState::Closing) {
         if (digitalRead(Pin::CLOSE_SWITCH)) {
             _actual_position = 0.0f;
         } else {
-            float position = 100.0f - (_current_position_ms.count() * 100.0f) / _time_to_close.count();
-            if (position > 0.0f) {
-            _actual_position = position;
-            } else {
-                _actual_position = 0.05f;
-            }
+            float position = 100.0f - (static_cast<float>(_current_position_ms.count()) * 100.0f) / 
+                             static_cast<float>(_time_to_close.count());
+            _actual_position = (position > 0.0f) ? position : 0.05f;
         }
     }
 }
+
+/**
+ * @brief Returns the current gate position.
+ * @return Current position percentage.
+ */
 float Motor::read_position(){
     return _actual_position;
 }
+
+/**
+ * @brief Main motor control loop which waits for jobs and updates motor control.
+ */
 void Motor::motor_loop() {
+    wiringPiISR(Pin::LIGHT_BARRIER, INT_EDGE_RISING, light_barrier_isr);
+    wiringPiISR(Pin::CLOSE_SWITCH, INT_EDGE_RISING, close_switch_isr);
+    wiringPiISR(Pin::OPEN_SWITCH, INT_EDGE_RISING, open_switch_isr);
     while (true) {
         //condition variable wait check if job set. muss solange schlafen bis ein neuer job gesetzt wurde wenn kein job mehr anliegt
         std::unique_lock<std::mutex> lock(motor_mutex);
-        motor_cv.wait(lock,job::is_job_active());
-        check_end_switches();
-        check_light_barrier();
-        check_for_overcurrent();
+		if (!job::is_job_active()) {
+            motor_cv.wait(lock, [&] { return job::ready; });
+            job::ready = false;
+		}
+
+        //check_for_overcurrent();
 
         if (update_motor()) {
             job::delete_job();
@@ -155,7 +182,10 @@ void Motor::motor_loop() {
     }
 }
 
-
+/**
+ * @brief Updates the motor controls by adjusting speed based on keyframe interpolation.
+ * @return true if an error state is detected.
+ */
 bool Motor::update_motor() {
     update_current_position();
     float speed = job::get_speed(_actual_position);
@@ -166,31 +196,71 @@ bool Motor::update_motor() {
     return false;
 }
 
+/**
+ * @brief Sets the motor speed and updates its state.
+ * @param speed Target speed.
+ */
 void Motor::set_speed(float speed){
+    if (check_end_switches()) speed=0.0f;
     digitalWrite(Pin::DIRECTION, (speed >= 0 ? LOW : HIGH));
-    //set speed
-    pwmWrite(Pin::PWM, std::abs(speed));
+    //set speed 0 - 128 (0-100%)
+    uint8_t int_speed = static_cast<uint8_t>(std::abs(speed) * 128);
+    pwmWrite(Pin::PWM, int_speed);
     _actual_speed = speed;
     update_states();
 }
 
+/**
+ * @brief Returns the current motor speed.
+ * @return Current speed.
+ */
 float Motor::read_speed(){
     return _actual_speed;
 }
 
+/**
+ * @brief Checks whether the motor is calibrated.
+ * @return true if calibrated.
+ */
 bool Motor::is_calibrated() {
-    std::lock_guard<std::mutex> lock(motor_mutex);
+    std::unique_lock<std::mutex> lock(motor_mutex);
     return _is_calibrated;
 }
 
-/*!
- * \brief Performs motor timing calibration.
- *        Moves gate from closed to open and vice versa, measuring times.
+// isr for end switches
+void Motor::open_switch_isr(){
+    set_speed(0.0f);
+    job::delete_job();
+    if (_is_calibrated) return;
+    { 
+        std::unique_lock<std::mutex> lock(motor_mutex);
+        open_switch_triggered = true;
+    }
+    open_switch_cv.notify_all();
+};
+
+void Motor::close_switch_isr(){
+    set_speed(0.0f);
+    job::delete_job();
+    if (_is_calibrated) return;
+    { 
+        std::unique_lock<std::mutex> lock(motor_mutex);
+        close_switch_triggered = true;
+    }
+    close_switch_cv.notify_all();
+};
+
+
+/**
+ * @brief Performs timing calibration by moving the gate and measuring times.
+ *
+ * Moves the gate from closed to open and vice versa to determine timing parameters.
+ * Throws a runtime error if calibration times out.
  */
 void Motor::calibrate_timing() {
     auto overall_start = steady_clock::now();
     {
-        std::lock_guard<std::mutex> lock(motor_mutex);
+        std::unique_lock<std::mutex> lock(motor_mutex);
         _is_calibrated = false;
         _time_to_open = 0ms;
         _time_to_close = 0ms;
@@ -199,9 +269,6 @@ void Motor::calibrate_timing() {
     CalibrationStep calibration_step = check_position;
 
     while (true) {
-        // Timeout after 1 minute
-        if (steady_clock::now() - overall_start > minutes(1))
-            throw std::runtime_error("Calibration timed out!");
 
         switch (calibration_step) {
             case check_position: {
@@ -213,25 +280,30 @@ void Motor::calibrate_timing() {
                     calibration_step = move_to_starting_position;
             } break;
             case move_to_starting_position: {
-                { std::lock_guard<std::mutex> lock(motor_mutex); set_speed(-Param::calibration_speed); }
-                if (digitalRead(Pin::OPEN_SWITCH))
-                    calibration_step = check_position;
+                std::unique_lock<std::mutex> lock(motor_mutex);
+                set_speed(-Param::calibration_speed); 
+                wiringPiISR(Pin::OPEN_SWITCH, INT_EDGE_RISING, open_switch_isr);
+                open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
+                open_switch_triggered = false; // reset flag after wake-up
+                calibration_step = check_position;                    
             } break;
             case measure_time_to_fully_open: {
-                { std::lock_guard<std::mutex> lock(motor_mutex); set_speed(Param::calibration_speed); }
+                set_speed(Param::calibration_speed);
+                
+                std::unique_lock<std::mutex> lock(motor_mutex);
+                wiringPiISR(Pin::OPEN_SWITCH, INT_EDGE_RISING, open_switch_isr);
                 auto start = steady_clock::now();
-                while (!digitalRead(Pin::OPEN_SWITCH)) {
-                    if (steady_clock::now() - overall_start > minutes(1))
-                        throw std::runtime_error("Calibration (open) timed out!");
-                    std::this_thread::sleep_for(1ms); // sleep outside lock
-                }
+
+                open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
+                open_switch_triggered = false; // reset flag after wake-up
+
                 auto end = steady_clock::now();
                 {
-                    std::lock_guard<std::mutex> lock(motor_mutex);
+                    std::unique_lock<std::mutex> lock(motor_mutex);
                     _time_to_open = duration_cast<milliseconds>(end - start);
                 }
                 {
-                    std::lock_guard<std::mutex> lock(motor_mutex);
+                    std::unique_lock<std::mutex> lock(motor_mutex);
                     if (_time_to_close.count() != 0) {
                         float factor = Param::calibration_speed; // Division durch 1.0f unnötig
                         _time_to_open = duration_cast<milliseconds>(_time_to_open * factor);
@@ -243,16 +315,17 @@ void Motor::calibrate_timing() {
                 calibration_step = measure_time_to_fully_close;
             } break;
             case measure_time_to_fully_close: {
-                { std::lock_guard<std::mutex> lock(motor_mutex); set_speed(-Param::calibration_speed); }
+                set_speed(-Param::calibration_speed);
+                std::unique_lock<std::mutex> lock(motor_mutex);
+                
+                wiringPiISR(Pin::CLOSE_SWITCH, INT_EDGE_RISING, close_switch_isr);
                 auto start = steady_clock::now();
-                while (!digitalRead(Pin::CLOSE_SWITCH)) {
-                    if (steady_clock::now() - overall_start > minutes(1))
-                        throw std::runtime_error("Calibration (close) timed out!");
-                    std::this_thread::sleep_for(1ms);
-                }
+                close_switch_cv.wait(lock, [&] { return close_switch_triggered; });
+                close_switch_triggered = false; // reset flag after wake-up
+
                 auto end = steady_clock::now();
                 {
-                    std::lock_guard<std::mutex> lock(motor_mutex);
+                    std::unique_lock<std::mutex> lock(motor_mutex);
                     _time_to_close = duration_cast<milliseconds>(end - start);
                     if (_time_to_open.count() != 0) {
                         float factor = Param::calibration_speed;
