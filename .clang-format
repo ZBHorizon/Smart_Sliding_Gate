@@ -1,0 +1,31 @@
+---
+Language: Cpp
+# Basierend auf 'LLVM' oder 'Google' oder 'Microsoft' – wähle das,
+# was deiner gewünschten Grundformatierung am nächsten kommt.
+BasedOnStyle: LLVM
+
+# Einrückung und Tabs
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Klammerstil: "Allman" = geschweifte Klammern in eine neue Zeile
+BreakBeforeBraces: Allman
+
+# Zusätzliche Optionen (einige Beispiele)
+AccessModifierOffset: -2                # access specifier (public:, private:) 2 nach links
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+AlignTrailingComments: true
+SpacesInParentheses: false
+SpaceBeforeAssignmentOperators: true
+SpaceAfterCStyleCast: true
+Cpp11BracedListStyle: true
+
+NamespaceIndentation: None
+# Keine Sortierung der #includes (wenn du das wünschst)
+SortIncludes: true
+
+# Du kannst noch mehr Optionen definieren, siehe clang-format-Doku.
+...

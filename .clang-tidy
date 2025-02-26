@@ -1,0 +1,42 @@
+Checks: >
+  -*,
+  readability-identifier-naming
+
+
+HeaderFilterRegex: '^(?!.*[\\/]include[\\/]).*$'
+
+WarningsAsErrors: ''  # Oder 'readability-identifier-naming', falls du Naming-Verstöße als Fehler statt Warnung willst
+
+CheckOptions:
+  # ========== Klassen (z.B. Motor) als PascalCase ==========
+  - key: readability-identifier-naming.ClassCase
+    value: PascalCase
+
+  # ========== Private struct (z.B. _Param) ==========
+  - key: readability-identifier-naming.PrivateRecordPrefix
+    value: "_"
+  - key: readability-identifier-naming.PrivateRecordCase
+    value: PascalCase
+
+  # ========== Private Member (z.B. _actual_speed) => _ + lower_case ==========
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: "_"
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: lower_case
+
+  # ========== Private constexpr Member (z.B. _CALIBRATION_SPEED) => _ + UPPER_CASE ==========
+  - key: readability-identifier-naming.PrivateMemberConstexprPrefix
+    value: "_"
+  - key: readability-identifier-naming.PrivateMemberConstexprCase
+    value: UPPER_CASE
+
+  # ========== Methoden (z.B. set_speed, update_states) => snake_case ==========
+  - key: readability-identifier-naming.MethodCase
+    value: snake_case
+
+  # ========== Enums und Enum-Konstanten (z.B. MotorState::Opening, CalibrationStep::move_to_starting_position):
+  #            wir erlauben "any" => keine Warnungen, egal ob PascalCase, snake_case oder UPPER_CASE
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
