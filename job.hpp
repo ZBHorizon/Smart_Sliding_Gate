@@ -1,54 +1,91 @@
 /**
  * @file job.hpp
- * @brief Deklaration der job-Klasse zur Erstellung und Steuerung von Bewegungsabläufen.
+ * @brief Declaration of the job class for generating and controlling motion sequences.
+ *
+ * This class defines a keyframe structure and methods for creating,
+ * updating, and deleting motion jobs. All operations on keyframes are protected
+ * by a mutex for thread safety.
  */
 
 #pragma once
 #include <list>
 #include <limits>
 #include <cmath>
+#include <mutex> // For thread safety
+
 namespace SlidingGate {
+
 class job {
 public:
     /**
-     * @brief Struktur für einen Keyframe.
+     * @brief Structure representing a keyframe.
+     * 
+     * A keyframe defines a point in the motion sequence with a specific speed
+     * and position.
      */
     struct keyframe {
-        float speed;     ///< Geschwindigkeit
-        float position;  ///< Position
+        float speed;     ///< Speed value at this keyframe.
+        float position;  ///< Position value (e.g., percentage) at this keyframe.
     };
+
+    static bool ready;
+
     /**
-     * @brief Erstellt einen neuen Job basierend auf dem Ziel-Keyframe.
-     * @param target_keyframe Ziel-Keyframe mit gewünschter Geschwindigkeit und Position.
-     * @return true, wenn der Job erfolgreich erstellt wurde.
+     * @brief Creates a new job based on the target keyframe.
+     * 
+     * This function calculates intermediate keyframes for acceleration,
+     * deceleration, and stopping based on the current motor state.
+     * All keyframe operations are protected by a mutex.
+     *
+     * @param target_keyframe Desired keyframe with target speed and position.
+     * @return true if the job was successfully created.
      */
     static bool create_job(keyframe target_keyframe);
     
-
+    /**
+     * @brief Generates a job to stop the motor.
+     */
     static void stop_motor();
 
     /**
-     * @brief Löscht den aktuellen Job.
+     * @brief Deletes the current job by clearing all keyframes.
      */
     static void delete_job();
 
+    /**
+     * @brief Indicates whether a job is currently active.
+     * 
+     * A job is considered active if there is at least one keyframe.
+     *
+     * @return true if active, otherwise false.
+     */
     static bool is_job_active();
 
     /**
-     * @brief Gibt einen interpolierten Geschwindigkeitswert für eine gegebene Position zurück.
-     * @param position aktuelle Position
-     * @return interpolierte Geschwindigkeit oder signaling_NaN() bei ungültiger Anfrage.
+     * @brief Returns an interpolated speed value for a given position.
+     * 
+     * The function loops over the keyframe list and interpolates the speed
+     * between two surrounding keyframes. If the position is out-of-range,
+     * a signaling NaN is returned.
+     *
+     * @param position Current position.
+     * @return Interpolated speed or signaling_NaN() if the request is invalid.
      */
     static float get_speed(float position);
 
-
 private:
-    static std::list<keyframe> keyframes;  ///< Liste der Keyframes
+    static std::list<keyframe> keyframes;  ///< List of keyframes for the current job.
 
-    static constexpr float TOLERANCE = 0.01f;        ///< Positions-Toleranz
-    static constexpr float RAMP_DISTANCE = 0.03f;      ///< Anfahr-/Abbremsstrecke
-    static constexpr float TARGET_MAX_SPEED = 1.0f; ///< Zielgeschwindigkeit: Wir gehen davon aus, dass der Zielwert 1.0 (bzw. -1.0 in Zielrichtung) ist.
-    static constexpr float MIN_SPEED = 0.05f;      ///< Mindestgeschwindigkeit
-    static std::list<keyframe>::iterator current_iter; ///< Iterator auf den aktuellen Keyframe
+    /**
+     * @brief Mutex to protect keyframes in a multi-threaded environment.
+     */
+    inline static std::mutex job_mutex;     
+
+    static constexpr float TOLERANCE = 0.01f;        ///< Tolerance for position comparisons.
+    static constexpr float RAMP_DISTANCE = 0.03f;      ///< Distance used for acceleration/deceleration.
+    static constexpr float TARGET_MAX_SPEED = 1.0f;    ///< Assumed maximum speed magnitude.
+    static constexpr float MIN_SPEED = 0.05f;          ///< Minimum allowed operating speed.
+    static std::list<keyframe>::iterator current_iter; ///< Iterator to the current keyframe.
 };
-}
+
+} // namespace SlidingGate
