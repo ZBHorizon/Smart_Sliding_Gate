@@ -3,7 +3,7 @@
  * @brief Declaration of the job class for generating and controlling motion sequences.
  *
  * This class defines a keyframe structure and methods for creating,
- * updating, and deleting motion jobs. All operations on keyframes are protected
+ * updating, and deleting motion jobs. All operations on _keyframes are protected
  * by a mutex for thread safety.
  */
 
@@ -33,7 +33,7 @@ public:
     /**
      * @brief Creates a new job based on the target keyframe.
      * 
-     * This function calculates intermediate keyframes for acceleration,
+     * This function calculates intermediate _keyframes for acceleration,
      * deceleration, and stopping based on the current motor state.
      * All keyframe operations are protected by a mutex.
      *
@@ -48,7 +48,7 @@ public:
     static void stop_motor();
 
     /**
-     * @brief Deletes the current job by clearing all keyframes.
+     * @brief Deletes the current job by clearing all _keyframes.
      */
     static void delete_job();
 
@@ -65,7 +65,7 @@ public:
      * @brief Returns an interpolated speed value for a given position.
      * 
      * The function loops over the keyframe list and interpolates the speed
-     * between two surrounding keyframes. If the position is out-of-range,
+     * between two surrounding _keyframes. If the position is out-of-range,
      * a signaling NaN is returned.
      *
      * @param position Current position.
@@ -74,18 +74,18 @@ public:
     static float get_speed(float position);
 
 private:
-    static std::list<keyframe> keyframes;  ///< List of keyframes for the current job.
+    static std::list<keyframe> _keyframes;  ///< List of _keyframes for the current job.
 
     /**
-     * @brief Mutex to protect keyframes in a multi-threaded environment.
+     * @brief Mutex to protect _keyframes in a multi-threaded environment.
      */
-    inline static std::mutex job_mutex;     
+    inline static std::mutex _job_mutex;     
 
-    static constexpr float TOLERANCE = 0.01f;        ///< Tolerance for position comparisons.
-    static constexpr float RAMP_DISTANCE = 0.03f;      ///< Distance used for acceleration/deceleration.
-    static constexpr float TARGET_MAX_SPEED = 1.0f;    ///< Assumed maximum speed magnitude.
-    static constexpr float MIN_SPEED = 0.05f;          ///< Minimum allowed operating speed.
-    static std::list<keyframe>::iterator current_iter; ///< Iterator to the current keyframe.
+    static constexpr float _TOLERANCE = 0.01f;        ///< Tolerance for position comparisons.
+    static constexpr float _RAMP_DISTANCE = 0.03f;      ///< Distance used for acceleration/deceleration.
+    static constexpr float _TARGET_MAX_SPEED = 1.0f;    ///< Assumed maximum speed magnitude.
+    static constexpr float _MIN_SPEED = 0.05f;          ///< Minimum allowed operating speed.
+    static std::list<keyframe>::iterator _current_iter; ///< Iterator to the current keyframe.
 };
 
 } // namespace SlidingGate
