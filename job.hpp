@@ -82,8 +82,8 @@ private:
     inline static std::mutex _job_mutex;     
 
     static constexpr float _TOLERANCE = 0.01f;        ///< Tolerance for position comparisons.
-    static constexpr float _RAMP_DISTANCE = 0.03f;      ///< Distance used for acceleration/deceleration.
-    static constexpr float _TARGET_MAX_SPEED = 1.0f;    ///< Assumed maximum speed magnitude.
+    static constexpr float _RAMP_DISTANCE = 0.2f;      ///< Distance used for acceleration/deceleration.
+    static constexpr float _TARGET_MAX_SPEED = 0.15f;    ///< Assumed maximum speed magnitude.
     static constexpr float _MIN_SPEED = 0.05f;          ///< Minimum allowed operating speed.
     static std::list<keyframe>::iterator _current_iter; ///< Iterator to the current keyframe.
 };

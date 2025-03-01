@@ -113,7 +113,8 @@ bool job::create_job(keyframe target_keyframe) {
     // Deceleration phase: If the acceleration phase did not already force a skip.
     if (!skip) {
         // Add a keyframe that decelerates before reaching the target.
-        _keyframes.push_back({target_direction * 1.0f,
+        _keyframes.push_back(
+            {target_direction * _TARGET_MAX_SPEED,
                              target_keyframe.position - _RAMP_DISTANCE * ((_keyframes.back().speed > 0.0f) ? 1.0f : -1.0f)});
     }
     
