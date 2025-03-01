@@ -5,7 +5,7 @@
 #include <Initialize.hpp>
 #include <INA226.hpp>
 #include <job.hpp>
-
+#include <wiringPi.h>
 using namespace std::chrono;
 using namespace SlidingGate;
 
@@ -27,7 +27,7 @@ int main() {
     while (true) {
 
 		//std::cout << "Current: " << INA226::readCurrent_mA() << " mA" << std::endl;
-        
+        /*
         // Prompt user for calibration if not yet calibrated.
         if (!Motor::is_calibrated()) {
             std::cout << "Calibrate the motor? (y/n): ";
@@ -39,8 +39,7 @@ int main() {
                 std::cout << "Motor not calibrated. Exiting program." << std::endl;
                 return 0;
             }
-        } else {
-        
+        } else {*/
             // Ask user for the target gate percentage.
             std::cout << "Enter target gate percentage or 's' to stop: ";
             std::string input;
@@ -55,10 +54,10 @@ int main() {
                 };
                 job::create_job(target);
             }
-            
+            /*
             
         }
-         
+         */
         std::this_thread::sleep_for(500ms);
     }
 
