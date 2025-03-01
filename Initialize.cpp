@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
+#include <Motor.hpp>
 
 namespace SlidingGate {
 
@@ -46,7 +47,11 @@ namespace SlidingGate {
 
         pinMode(Pin::LIGHT_BARRIER, INPUT);
         pullUpDnControl(Pin::LIGHT_BARRIER, PUD_UP);
-
+        wiringPiISR(Pin::LIGHT_BARRIER, INT_EDGE_FALLING,
+                    Motor::light_barrier_isr);
+        wiringPiISR(Pin::CLOSE_SWITCH, INT_EDGE_FALLING,
+                    Motor::close_switch_isr);
+        wiringPiISR(Pin::OPEN_SWITCH, INT_EDGE_FALLING, Motor::open_switch_isr);
         std::cout << "GPIO initialized successfully.\n";
         return true;
     }
