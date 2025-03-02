@@ -44,6 +44,10 @@ namespace SlidingGate {
         pullUpDnControl(Pin::REMOTE_B, PUD_UP);
         pullUpDnControl(Pin::REMOTE_C, PUD_UP);
         pullUpDnControl(Pin::REMOTE_D, PUD_UP);
+        wiringPiISR(Pin::REMOTE_A, INT_EDGE_RISING, Control::remote_a_isr);
+        wiringPiISR(Pin::REMOTE_B, INT_EDGE_RISING, Control::remote_b_isr);
+        wiringPiISR(Pin::REMOTE_C, INT_EDGE_RISING, Control::remote_c_isr);
+        wiringPiISR(Pin::REMOTE_D, INT_EDGE_RISING, Control::remote_d_isr);
 
         pinMode(Pin::LIGHT_BARRIER, INPUT);
         pullUpDnControl(Pin::LIGHT_BARRIER, PUD_UP);
@@ -52,6 +56,7 @@ namespace SlidingGate {
         wiringPiISR(Pin::CLOSE_SWITCH, INT_EDGE_FALLING,
                     Motor::close_switch_isr);
         wiringPiISR(Pin::OPEN_SWITCH, INT_EDGE_FALLING, Motor::open_switch_isr);
+
         std::cout << "GPIO initialized successfully.\n";
         return true;
     }
