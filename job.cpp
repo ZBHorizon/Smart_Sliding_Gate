@@ -33,12 +33,15 @@ bool job::ready = false;
  *
  * Calculates intermediate _keyframes for acceleration, deceleration, and stopping.
  *
- * @param target_keyframe The desired keyframe.
+ * @param target_position The desired keyframe.
  * @return true if the job is successfully created.
  */
-bool job::create_job(keyframe target_keyframe) {
+bool job::create_job(float target_position) {
     //std::lock_guard<std::mutex> lock(_job_mutex);
-
+    keyframe target_keyframe{
+        .speed = 0.0f,
+        .position = target_position
+    };
     // Read current speed and position from the motor.
     keyframe start_keyframe { 
         .speed = Motor::read_speed(),
@@ -147,11 +150,7 @@ void job::stop_motor(){
     } else {
         stop_position = Motor::read_position() - _RAMP_DISTANCE;
     }
-    keyframe stop_keyframe { 
-        .speed = 0.0f,
-        .position = stop_position,
-    };
-    create_job(stop_keyframe);
+    create_job(stop_position);
 }
 
 /**

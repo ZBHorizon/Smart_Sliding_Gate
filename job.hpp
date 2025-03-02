@@ -37,10 +37,10 @@ public:
      * deceleration, and stopping based on the current motor state.
      * All keyframe operations are protected by a mutex.
      *
-     * @param target_keyframe Desired keyframe with target speed and position.
+     * @param target_position Desired keyframe with target speed and position.
      * @return true if the job was successfully created.
      */
-    static bool create_job(keyframe target_keyframe);
+    static bool create_job(float target_position);
     
     /**
      * @brief Generates a job to stop the motor.
