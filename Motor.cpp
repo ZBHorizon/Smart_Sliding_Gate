@@ -30,13 +30,28 @@ namespace SlidingGate {
 //! Mutex to protect all static motor data.
 static std::mutex motor_mutex;
 
+milliseconds average(std::list<milliseconds> list){
+    milliseconds sum = 0ms;
+    sum -= *std::minmax_element(list.begin(), list.end()).first;
+    return sum / list.size();
+}
+
+std::list<milliseconds> Motor::append_time(std::list<milliseconds> list, milliseconds time){
+    if (list.size() >= _Param::LIST_SIZE){
+        list.pop_front();
+    }
+    list.push_back(time);
+    return list;
+}
+
+
 /**
  * @brief Updates the internal state of the motor based on the current speed.
  */
 void Motor::update_states() {
     if (_actual_speed == 0) {  
         if (_motor_state != MotorState::None) {
-            _stop_timestamp = steady_clock::now();
+            if (_is_time_to_open_calibrated)_stop_timestamp = steady_clock::now();
             _motor_state = MotorState::None;
             std::cout << "Motorstate::None" << std::endl;
         }
@@ -76,11 +91,7 @@ void Motor::light_barrier_isr() {
     // Check if light barrier active when closing
     if (_motor_state == MotorState::Closing) { 
         set_speed(0.0f);
-        job::keyframe open { 
-            .speed = 0.0f,
-            .position = 1.0f
-        };
-        job::create_job(open);
+        job::create_job(1.0f);
     }
     
 }
@@ -108,11 +119,7 @@ void Motor::check_for_overcurrent(){
     if (_overcurrent_active) {
         if (_motor_state != MotorState::Closing) {
         set_speed(0.0f);
-        job::keyframe open { 
-            .speed = 0.0f,
-            .position = 1.0f
-        };
-        job::create_job(open);
+        job::create_job(1.0f);
         } else {
             set_speed(0.0f);
             job::delete_job();
@@ -135,7 +142,11 @@ void Motor::update_current_position() {
         } else {
             float position = (static_cast<float>(current_position_ms.count()) * 100.0f) / 
                              static_cast<float>(_time_to_open.count());
-            _actual_position = (position < 1.0f) ? position : 0.95f;
+            if ((position > 0.99f) && (_slow_speed == 0.0f)){
+                _slow_speed = _actual_speed;
+                _slow_timestamp = std::chrono::steady_clock::now();
+            }
+            _actual_position = (position > 0.99f) ? 0.95f : position;
         }
     }else if (_motor_state == MotorState::Closing) {
         if (!digitalRead(Pin::CLOSE_SWITCH)) {
@@ -143,10 +154,95 @@ void Motor::update_current_position() {
         } else {
             float position = 100.0f - (static_cast<float>(current_position_ms.count()) * 100.0f) / 
                              static_cast<float>(_time_to_close.count());
-            _actual_position = (position > 0.0f) ? position : 0.05f;
+            if ((position < 0.01f) && (_slow_speed == 0.0f)){
+                _slow_speed = std::abs(_actual_speed);
+                _slow_timestamp = std::chrono::steady_clock::now();
+            }
+            _actual_position = (position < 0.01f) ? 0.05f : position;
         }
     }
 }
+
+void Motor::move_to_starting_position(float starting_position){
+    if (starting_position == 1.0f){
+        std::cout << "open with calibration speed"
+        << std::endl;
+        std::unique_lock<std::mutex> lock(motor_mutex);
+        set_speed(-_Param::_CALIBRATION_SPEED); 
+        _open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
+        open_switch_triggered = false; // reset flag after wake-up
+        return;
+    }
+    if (starting_position == 0.0f){
+        std::cout << "close with calibration speed"
+        << std::endl;
+        std::unique_lock<std::mutex> lock(motor_mutex);
+        set_speed(_Param::_CALIBRATION_SPEED); 
+        _close_switch_cv.wait(lock, [&] { return close_switch_triggered; });
+        close_switch_triggered = false; // reset flag after wake-up
+        return;
+    }
+    std::cout << "position needs to be 0.0f or 1.0f"
+    << std::endl;
+
+}
+
+
+void Motor::update_times (){
+    static std::mutex update_times_mutex;
+    if (digitalRead(Pin::CLOSE_SWITCH)){
+        if (!_is_time_to_open_calibrated){
+            std::cout << "measure time to open"
+                    << std::endl;
+            std::unique_lock<std::mutex> lock(update_times_mutex);
+            _open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
+            open_switch_triggered = false; // reset flag after wake-up
+            milliseconds fast_duration = duration_cast<milliseconds>(_slow_timestamp - _start_timestamp);
+            milliseconds slow_duration = duration_cast<milliseconds>((_stop_timestamp - _slow_timestamp) / _slow_speed);
+            _time_to_open = fast_duration + slow_duration;
+            avarage_time_to_open.push_back(_time_to_open);
+            _slow_speed = 0.0f;
+            _is_time_to_open_calibrated = true;
+            return;            
+        } 
+        std::unique_lock<std::mutex> lock(update_times_mutex);
+        _open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
+        open_switch_triggered = false; // reset flag after wake-up
+        if (digitalRead(Pin::OPEN_SWITCH)){
+            milliseconds open_duration = duration_cast<milliseconds>(_stop_timestamp - _start_timestamp);
+            avarage_time_to_open = append_time(avarage_time_to_open, open_duration);
+            _time_to_open = average(avarage_time_to_open); //return the avrage value of all elemts in list
+        }
+        return;
+    }
+    if (digitalRead(Pin::OPEN_SWITCH)){
+        if (!_is_time_to_close_calibrated){
+            std::cout << "measure time to close"
+            << std::endl;
+            std::unique_lock<std::mutex> lock(update_times_mutex);
+            _close_switch_cv.wait(lock, [&] { return close_switch_triggered; });
+            close_switch_triggered = false; // reset flag after wake-up
+            milliseconds fast_duration = duration_cast<milliseconds>(_slow_timestamp - _start_timestamp);
+            milliseconds slow_duration = duration_cast<milliseconds>((_stop_timestamp - _slow_timestamp) / _slow_speed);
+            _time_to_close = fast_duration + slow_duration;
+            avarage_time_to_close.push_back(_time_to_close);
+            _slow_speed = 0.0f;
+            _is_time_to_close_calibrated = true;
+            return;         
+        } 
+        std::unique_lock<std::mutex> lock(update_times_mutex);
+        _close_switch_cv.wait(lock, [&] { return close_switch_triggered; });
+        close_switch_triggered = false; // reset flag after wake-up
+        if (digitalRead(Pin::CLOSE_SWITCH)){
+            milliseconds close_duration = duration_cast<milliseconds>(_stop_timestamp - _start_timestamp);
+            avarage_time_to_close = append_time(avarage_time_to_close, close_duration);
+            _time_to_close = average(avarage_time_to_close); //return the avrage value of all elemts in list
+        }
+        return;
+    }
+}
+
+
 
 /**
  * @brief Returns the current gate position.
@@ -163,10 +259,11 @@ void Motor::motor_loop() {
     while (true) {
         //condition variable wait check if job set. muss solange schlafen bis ein neuer job gesetzt wurde wenn kein job mehr anliegt
         std::unique_lock<std::mutex> lock(motor_mutex);
-		if (!job::is_job_active()) {
+        if (!job::is_job_active()) {
             motor_cv.wait(lock, [&] { return job::ready; });
+            std::thread time_thread(&Motor::update_times);
             job::ready = false;
-		}
+        }
 
         //check_for_overcurrent();
 
@@ -224,126 +321,31 @@ float Motor::read_speed(){
  */
 bool Motor::is_calibrated() {
     std::unique_lock<std::mutex> lock(motor_mutex);
-    return _is_calibrated;
+    return _is_time_to_open_calibrated && _is_time_to_close_calibrated;
 }
 
 // isr for end switches
 void Motor::open_switch_isr(){
     std::cout << "open_switch_isr()" << std::endl;
-    if ((_motor_state == MotorState::Opening)) set_speed(0.0f);
-    
+    if ((_motor_state == MotorState::Closing)) return;
+    set_speed(0.0f);
     job::delete_job();
-    if (_is_calibrated) return;
-    { 
-        std::unique_lock<std::mutex> lock(motor_mutex);
-        open_switch_triggered = true;
-    }
-    _open_switch_cv.notify_all();
+    if (!_is_time_to_open_calibrated) return;
+    _stop_timestamp = steady_clock::now();
+    open_switch_triggered = true;
+    _close_switch_cv.notify_all();
 };
 
 void Motor::close_switch_isr(){
     std::cout << "close_switch_isr()" << std::endl;
-    if ((_motor_state == MotorState::Closing)) set_speed(0.0f);
+    if (_motor_state == MotorState::Opening)return;
+    set_speed(0.0f);
     job::delete_job();
-    if (_is_calibrated) return;
-    { 
-        std::unique_lock<std::mutex> lock(motor_mutex);
-        close_switch_triggered = true;
-    }
+    if (!_is_time_to_close_calibrated) return;
+    _stop_timestamp = steady_clock::now();
+    close_switch_triggered = true;
     _close_switch_cv.notify_all();
 };
-
-
-/**
- * @brief Performs timing calibration by moving the gate and measuring times.
- *
- * Moves the gate from closed to open and vice versa to determine timing parameters.
- * Throws a runtime error if calibration times out.
- */
-void Motor::calibrate_timing() {
-    //auto overall_start = steady_clock::now();
-    {
-        std::unique_lock<std::mutex> lock(motor_mutex);
-        _is_calibrated = false;
-        _time_to_open = 0ms;
-        _time_to_close = 0ms;
-    }
-    enum CalibrationStep { move_to_starting_position, check_position, measure_time_to_fully_open, measure_time_to_fully_close };
-    CalibrationStep calibration_step = check_position;
-
-    while (true) {
-
-        switch (calibration_step) {
-            case check_position: {
-                if (!digitalRead(Pin::CLOSE_SWITCH))
-                    calibration_step = measure_time_to_fully_open;
-                else if (!digitalRead(Pin::OPEN_SWITCH))
-                    calibration_step = measure_time_to_fully_close;
-                else
-                    calibration_step = move_to_starting_position;
-            } break;
-            case move_to_starting_position: {
-                std::this_thread::sleep_for(10ms);
-                std::cout << "move to starting position"
-                          << std::endl;
-                std::unique_lock<std::mutex> lock(motor_mutex);
-                set_speed(-_Param::_CALIBRATION_SPEED); 
-                _open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
-                open_switch_triggered = false; // reset flag after wake-up
-                calibration_step = check_position;                    
-            } break;
-            case measure_time_to_fully_open: {
-                std::this_thread::sleep_for(10ms);
-                std::cout << "measure time to open"
-                          << std::endl;
-                set_speed(_Param::_CALIBRATION_SPEED);
-                
-                std::unique_lock<std::mutex> lock(motor_mutex);
-                auto start = steady_clock::now();
-
-                _open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
-                open_switch_triggered = false; // reset flag after wake-up
-                std::cout << "open wake up" << std::endl;
-                auto end = steady_clock::now();
-                
-
-                _time_to_open = duration_cast<milliseconds>(end - start);
-
-                if (_time_to_close.count() != 0) {
-                    float factor = _Param::_CALIBRATION_SPEED; 
-                    _time_to_open = duration_cast<milliseconds>(_time_to_open * factor);
-                    _time_to_close = duration_cast<milliseconds>(_time_to_close * factor);
-                    _is_calibrated = true;
-                    return;
-                }
-                calibration_step = measure_time_to_fully_close;
-            } break;
-            case measure_time_to_fully_close: {
-                std::this_thread::sleep_for(10ms);
-                std::cout << "measure time to close"
-                          << std::endl;
-                set_speed(-_Param::_CALIBRATION_SPEED);
-                std::unique_lock<std::mutex> lock(motor_mutex);
-                
-                auto start = steady_clock::now();
-                _close_switch_cv.wait(lock, [&] { return close_switch_triggered; });
-                close_switch_triggered = false; // reset flag after wake-up
-                std::cout << "close wake up" << std::endl;
-                auto end = steady_clock::now();
-
-                _time_to_close = duration_cast<milliseconds>(end - start);
-                if (_time_to_open.count() != 0) {
-                    float factor = _Param::_CALIBRATION_SPEED;
-                    _time_to_open = duration_cast<milliseconds>(_time_to_open * factor);
-                    _time_to_close = duration_cast<milliseconds>(_time_to_close * factor);
-                    _is_calibrated = true;
-                    return;
-                    
-                }
-                calibration_step = measure_time_to_fully_open;
-            } break;
-        }
-    }
-}
+ 
 } // namespace SlidingGate
 
