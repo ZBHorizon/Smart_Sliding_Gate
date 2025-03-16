@@ -1,0 +1,492 @@
+{
+  "version": 8,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ninja-multi",
+      "displayName": "Ninja Multi",
+      "description": "Default build using Ninja Multi-Config generator",
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "0e5b6991-d74f-4b3d-a41c-cf096e0b2508"
+      },
+      "binaryDir": "${sourceDir}/Build",
+      "installDir": "${sourceDir}/Install",
+      "hidden": true
+    },
+    {
+      "name": "android",
+      "displayName": "Android",
+      "description": "Build for Android on Windows",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "inherits": "ninja-multi",
+      "toolchainFile": "${sourceParentDir}/ThirdParty-Android-x86_64/android-sdk/ndk/26.0.10404224/build/cmake/android.toolchain.cmake",
+      "cacheVariables": {
+        "ANDROID_ABI": "x86_64",
+        "ANDROID_PLATFORM": "29"
+      },
+      "environment": {
+        "OPENALDIR": "${sourceParentDir}/ThirdParty-Android-x86_64/openal-1.21.1"
+      }
+    },
+    {
+      "name": "linux-clang",
+      "displayName": "CLang",
+      "description": "Build with CLang",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "inherits": "ninja-multi",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++ -fexperimental-library -ftime-trace -Werror -Wpedantic -Wno-c++26-extensions -Wno-deprecated-declarations",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O3 -Wno-nan-infinity-disabled"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Linux" ]
+        }
+      }
+    },
+    {
+      "name": "clang-aarch64-linux-gnu",
+      "displayName": "clang-aarch64-linux-gnu",
+      "description": "Build for aarch64 gnu with CLang",
+      "inherits": "linux-clang",
+      "architecture": {
+        "value": "aarch64",
+        "strategy": "external"
+      },
+      "toolchainFile": "CMake/CMakeCross-aarch64-linux-gnu.txt"
+    },
+    {
+      "name": "clang-x86_64-linux-gnu",
+      "displayName": "clang-x86_64-linux-gnu",
+      "description": "Build for x86_64 gnu with CLang",
+      "inherits": "linux-clang",
+      "architecture": {
+        "value": "x86_64",
+        "strategy": "external"
+      },
+      "toolchainFile": "CMake/CMakeCross-x86_64-linux-gnu.txt"
+    },
+    {
+      "name": "linux-g++",
+      "displayName": "Linux G++",
+      "description": "Build with G++",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "inherits": "ninja-multi",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0",
+        "CMAKE_CXX_FLAGS_RELEASE": "-Ofast"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Linux" ]
+        }
+      }
+    },
+    {
+      "name": "g++-aarch64-linux-gnu",
+      "displayName": "g++-aarch64-linux-gnu",
+      "description": "Build for aarch64 gnu with G++",
+      "inherits": "linux-g++",
+      "architecture": {
+        "value": "aarch64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "/usr/bin/aarch64-linux-gnu-g++"
+      },
+      "toolchainFile": "CMake/CMakeCross-aarch64-linux-gnu.txt"
+    },
+    {
+      "name": "g++-x86_64-linux-gnu",
+      "displayName": "g++-x86_64-linux-gnu",
+      "description": "Build for x86_64 gnu with G++",
+      "inherits": "linux-g++",
+      "architecture": {
+        "value": "x86_64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "/usr/bin/x86_64-linux-gnu-g++"
+      },
+      "toolchainFile": "CMake/CMakeCross-x86_64-linux-gnu.txt"
+    },
+    {
+      "name": "windows-ninja",
+      "displayName": "Windows Ninja",
+      "description": "Build for Windows with Ninja",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "inherits": "ninja-multi",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "toolset": {
+        "value": "v143,host=x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_CXX_FLAGS": "/MP /EHar /wd6319 /wd4251 /wd4275 /wd26444 /bigobj /source-charset:.28605",
+        "CMAKE_CXX_FLAGS_DEBUG": "/MDd /Od /RTC1 /Zi",
+        "CMAKE_CXX_FLAGS_RELEASE": "/O2 /fp:fast",
+        "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "/LTCG:STATUS",
+        "CMAKE_STATIC_LINKER_FLAGS_RELEASE": "/LTCG:STATUS"
+      },
+      "environment": {
+        "OPENALDIR": "${sourceParentDir}/ThirdParty-Win64/openal-1.19.1",
+        "SVT_AV1_DIR": "${sourceParentDir}/ThirdParty-Win64/svt_av1-1.7.0"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ]
+        }
+      }
+    },
+    {
+      "name": "windows-vs",
+      "displayName": "Windows Visual Studio",
+      "description": "Build using Visual Studio 17 2022 Project",
+      "generator": "Visual Studio 17 2022",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "toolset": {
+        "value": "v143,host=x64",
+        "strategy": "external"
+      },
+      "binaryDir": "${sourceDir}/Build",
+      "installDir": "${sourceDir}/Install",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_CXX_FLAGS": "/MP /EHar /wd6319 /wd4251 /wd4275 /wd26444 /bigobj /source-charset:.28605",
+        "CMAKE_CXX_FLAGS_DEBUG": "/MDd /Od /RTC1 /Zi",
+        "CMAKE_CXX_FLAGS_RELEASE": "/O2 /fp:fast"
+      },
+      "environment": {
+        "OPENALDIR": "${sourceParentDir}/ThirdParty-Win64/openal-1.19.1",
+        "SVT_AV1_DIR": "${sourceParentDir}/ThirdParty-Win64/svt_av1-1.7.0"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ]
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "android-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information",
+      "configuration": "Debug",
+      "configurePreset": "android"
+    },
+    {
+      "name": "android-release",
+      "displayName": "Release",
+      "description": "Optimize the resulting binaries",
+      "configuration": "Release",
+      "configurePreset": "android"
+    },
+    {
+      "name": "clang-aarch64-linux-gnu-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information",
+      "configuration": "Debug",
+      "configurePreset": "clang-aarch64-linux-gnu"
+    },
+    {
+      "name": "clang-aarch64-linux-gnu-release",
+      "displayName": "Release",
+      "description": "Optimize the resulting binaries",
+      "configuration": "Release",
+      "configurePreset": "clang-aarch64-linux-gnu"
+    },
+    {
+      "name": "clang-x86_64-linux-gnu-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information",
+      "configuration": "Debug",
+      "configurePreset": "clang-x86_64-linux-gnu"
+    },
+    {
+      "name": "clang-x86_64-linux-gnu-release",
+      "displayName": "Release",
+      "description": "Optimize the resulting binaries",
+      "configuration": "Release",
+      "configurePreset": "clang-x86_64-linux-gnu"
+    },
+    {
+      "name": "g++-aarch64-linux-gnu-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information",
+      "configuration": "Debug",
+      "configurePreset": "g++-aarch64-linux-gnu"
+    },
+    {
+      "name": "g++-aarch64-linux-gnu-release",
+      "displayName": "Release",
+      "description": "Optimize the resulting binaries",
+      "configuration": "Release",
+      "configurePreset": "g++-aarch64-linux-gnu"
+    },
+    {
+      "name": "g++-x86_64-linux-gnu-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information",
+      "configuration": "Debug",
+      "configurePreset": "g++-x86_64-linux-gnu"
+    },
+    {
+      "name": "g++-x86_64-linux-gnu-release",
+      "displayName": "Release",
+      "description": "Optimize the resulting binaries",
+      "configuration": "Release",
+      "configurePreset": "g++-x86_64-linux-gnu"
+    },
+    {
+      "name": "windows-ninja-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information",
+      "configuration": "Debug",
+      "configurePreset": "windows-ninja"
+    },
+    {
+      "name": "windows-ninja-release",
+      "displayName": "Release",
+      "description": "Optimize the resulting binaries",
+      "configuration": "Release",
+      "configurePreset": "windows-ninja"
+    },
+    {
+      "name": "windows-vs-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information",
+      "configuration": "Debug",
+      "configurePreset": "windows-vs"
+    },
+    {
+      "name": "windows-vs-release",
+      "displayName": "Release",
+      "description": "Optimize the resulting binaries",
+      "configuration": "Release",
+      "configurePreset": "windows-vs"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "clang-x86_64-linux-gnu-debug",
+      "displayName": "All Debug",
+      "configurePreset": "clang-x86_64-linux-gnu",
+      "configuration": "Debug",
+      "output": {
+        "verbosity": "default",
+        "debug": false,
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": false,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "clang-x86_64-linux-gnu-release",
+      "displayName": "All Release",
+      "configurePreset": "clang-x86_64-linux-gnu",
+      "configuration": "Release",
+      "output": {
+        "verbosity": "default",
+        "debug": false,
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": false,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "g++-x86_64-linux-gnu-debug",
+      "displayName": "All Debug",
+      "configurePreset": "g++-x86_64-linux-gnu",
+      "configuration": "Debug",
+      "output": {
+        "verbosity": "default",
+        "debug": false,
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": false,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "g++-x86_64-linux-gnu-release",
+      "displayName": "All Release",
+      "configurePreset": "g++-x86_64-linux-gnu",
+      "configuration": "Release",
+      "output": {
+        "verbosity": "default",
+        "debug": false,
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": false,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "windows-ninja-ctest-debug",
+      "displayName": "All Debug",
+      "configurePreset": "windows-ninja",
+      "configuration": "Debug",
+      "output": {
+        "verbosity": "default",
+        "debug": false,
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": true,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "windows-ninja-ctest-release",
+      "displayName": "All Release",
+      "configurePreset": "windows-ninja",
+      "configuration": "Release",
+      "output": {
+        "verbosity": "default",
+        "debug": false,
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": true,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "windows-vs-ctest-debug",
+      "displayName": "All Debug",
+      "configurePreset": "windows-vs",
+      "configuration": "Debug",
+      "output": {
+        "verbosity": "default",
+        "debug": false,
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": true,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "windows-vs-ctest-release",
+      "displayName": "All Release",
+      "configurePreset": "windows-vs",
+      "configuration": "Release",
+      "output": {
+        "verbosity": "default",
+        "debug": false,
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": true,
+        "noTestsAction": "error"
+      }
+    }
+  ],
+  "packagePresets": [
+    {
+      "name": "g++-x86_64-linux-gnu-release-cpack-deb",
+      "displayName": "DEB",
+      "configurePreset": "g++-x86_64-linux-gnu",
+      "generators": [ "DEB" ],
+      "configurations": [ "g++-x86_64-linux-gnu-release" ],
+      "output": {
+        "verbose": true
+      }
+    },
+    {
+      "name": "windows-ninja-release-cpack-nsis",
+      "displayName": "NSIS",
+      "configurePreset": "windows-ninja",
+      "generators": [ "NSIS" ],
+      "configurations": [ "windows-ninja-release" ],
+      "output": {
+        "verbose": true
+      }
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "g++-x86_64-linux-gnu-release-cpack-deb",
+      "displayName": "DEB",
+      "description": "Build through to package (no tests)",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "g++-x86_64-linux-gnu"
+        },
+        {
+          "type": "build",
+          "name": "g++-x86_64-linux-gnu-release"
+        },
+        {
+          "type": "package",
+          "name": "g++-x86_64-linux-gnu-release-cpack-deb"
+        }
+      ]
+    },
+    {
+      "name": "windows-ninja-release-cpack-nsis",
+      "displayName": "NSIS",
+      "description": "Build through to package (no tests)",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "windows-ninja"
+        },
+        {
+          "type": "build",
+          "name": "windows-ninja-release"
+        },
+        {
+          "type": "package",
+          "name": "windows-ninja-release-cpack-nsis"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+#----------------------------------------------------------------------------------------------------------------------------------------#
+#///////// Files ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------------------------------------------------------------------------#
+# set(TARGET_ASSETS_FILES "blabla.bla")
+
+set(TARGET_INCLUDE_FILES
+  "Event_handler.hpp"
+  "INA226.hpp"
+  "Initialize.hpp"
+  "job.hpp"
+  "Motor.hpp"
+  "Control.hpp")
+
+set(TARGET_SOURCE_FILES
+  "INA226.cpp"
+  "Initialize.cpp"
+  "job.cpp"
+  "Motor.cpp"
+  "Control.cpp")
+
+
+# Directories #
+#----------------------------------------------------------------------------------------------------------------------------------------#
+# set(TARGET_ASSETS_DIR  "${PROJECT_SOURCE_DIR}/assets")
+set(TARGET_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/SlidingGate")
+set(TARGET_SOURCE_DIR  "${PROJECT_SOURCE_DIR}/src/SlidingGate")
+
+
+# Upgrade to Absolute Paths #
+#----------------------------------------------------------------------------------------------------------------------------------------#
+# list(TRANSFORM TARGET_ASSETS_FILES  PREPEND "${TARGET_ASSETS_DIR}/")
+list(TRANSFORM TARGET_INCLUDE_FILES PREPEND "${TARGET_INCLUDE_DIR}/")
+list(TRANSFORM TARGET_SOURCE_FILES  PREPEND "${TARGET_SOURCE_DIR}/")

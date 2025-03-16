@@ -1,0 +1,52 @@
+{
+	"kind" : "toolchains",
+	"toolchains" : 
+	[
+		{
+			"compiler" : 
+			{
+				"id" : "GNU",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"/usr/include/c++/12",
+						"/usr/include/aarch64-linux-gnu/c++/12",
+						"/usr/include/c++/12/backward",
+						"/usr/lib/gcc/aarch64-linux-gnu/12/include",
+						"/usr/local/include",
+						"/usr/include/aarch64-linux-gnu",
+						"/usr/include"
+					],
+					"linkDirectories" : [],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : []
+				},
+				"path" : "/usr/bin/aarch64-linux-gnu-g++",
+				"target" : "aarch64-linux-gnu",
+				"version" : "12.2.0"
+			},
+			"language" : "CXX",
+			"sourceFileExtensions" : 
+			[
+				"C",
+				"M",
+				"c++",
+				"cc",
+				"cpp",
+				"cxx",
+				"m",
+				"mm",
+				"mpp",
+				"CPP",
+				"ixx",
+				"cppm"
+			]
+		}
+	],
+	"version" : 
+	{
+		"major" : 1,
+		"minor" : 0
+	}
+}

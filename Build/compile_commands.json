@@ -1,0 +1,62 @@
+[
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Debug\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -g -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/INA226.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/INA226.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/INA226.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Debug\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -g -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Initialize.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/Initialize.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/Initialize.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Debug\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -g -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/job.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/job.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/job.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Debug\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -g -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Motor.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/Motor.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/Motor.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Debug\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -g -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Control.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/Control.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/Control.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Release\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -Ofast -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Release/INA226.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/INA226.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/INA226.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Release\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -Ofast -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Release/Initialize.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/Initialize.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/Initialize.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Release\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -Ofast -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Release/job.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/job.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/job.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Release\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -Ofast -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Release/Motor.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/Motor.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/Motor.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Release\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -Ofast -std=gnu++20 -o src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Release/Control.cpp.o -c /root/Smart_Sliding_Gate/src/SlidingGate/Control.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/SlidingGate/Control.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Debug\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -g -std=gnu++20 -o src/CMakeFiles/SlidingGate.dir/Debug/main.cpp.o -c /root/Smart_Sliding_Gate/src/main.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/main.cpp"
+},
+{
+  "directory": "/root/Smart_Sliding_Gate/Build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DCMAKE_INTDIR=\\\"Release\\\" -I/root/Smart_Sliding_Gate/include -Wno-psabi -Werror -finput-charset=ISO8859-15 -ftemplate-backtrace-limit=0 -Ofast -std=gnu++20 -o src/CMakeFiles/SlidingGate.dir/Release/main.cpp.o -c /root/Smart_Sliding_Gate/src/main.cpp",
+  "file": "/root/Smart_Sliding_Gate/src/main.cpp"
+}
+]
