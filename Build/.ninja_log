@@ -1,20 +1,9 @@
 # ninja log v5
-1	113	1740842436925982058	src/Debug/SlidingGated	f5af991a8bdd882d
-2485	2515	1740842086781912217	src/SlidingGate/Debug/libsliding-gated.a	21f30d1f191fe658
-4	2485	1740842086749912210	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Motor.cpp.o	5ac9382edbef7505
-2	2470	1740842086737912208	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/job.cpp.o	aa42d819324997f4
-2	2172	1740842086437912145	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Initialize.cpp.o	f632cdbf508b222b
-4	2119	1740842086385912135	src/CMakeFiles/SlidingGate.dir/Debug/main.cpp.o	7fb0b3cb031ff4aa
-1	1236	1740842085501911950	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/INA226.cpp.o	735e2ab4f684f656
-4	1941	1742120920092505872	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Control.cpp.o	e1d530ce4d989f15
-3	1969	1742120920128505143	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/job.cpp.o	aa42d819324997f4
-3	2136	1742120920296501739	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Motor.cpp.o	5ac9382edbef7505
-2	2228	1742121392314074343	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Initialize.cpp.o	f632cdbf508b222b
 3	2279	1742121392370073050	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Control.cpp.o	e1d530ce4d989f15
+1	1236	1740842085501911950	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/INA226.cpp.o	735e2ab4f684f656
 3	2317	1742121392410072126	src/CMakeFiles/SlidingGate.dir/Debug/main.cpp.o	7fb0b3cb031ff4aa
+2	1048	1742121436929042011	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Initialize.cpp.o	f632cdbf508b222b
 2	2470	1742121392558068708	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/job.cpp.o	aa42d819324997f4
 2	2652	1742121392742064458	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Motor.cpp.o	5ac9382edbef7505
-2652	2741	1742121392834062334	src/SlidingGate/Debug/libsliding-gated.a	588867108c4a914a
-2	1048	1742121436929042011	src/SlidingGate/CMakeFiles/LibSlidingGate.dir/Debug/Initialize.cpp.o	f632cdbf508b222b
 1048	1096	1742121436981040805	src/SlidingGate/Debug/libsliding-gated.a	588867108c4a914a
 1097	1214	1742121437097038116	src/Debug/SlidingGated	f5af991a8bdd882d
