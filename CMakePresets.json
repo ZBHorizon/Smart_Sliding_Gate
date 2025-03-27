@@ -12,7 +12,6 @@
       "description": "Default build using Ninja Multi-Config generator",
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
-        "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "0e5b6991-d74f-4b3d-a41c-cf096e0b2508"
       },
       "binaryDir": "${sourceDir}/Build",
       "installDir": "${sourceDir}/Install",

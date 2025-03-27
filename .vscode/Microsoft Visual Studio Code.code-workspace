@@ -3,9 +3,9 @@
       {
         "path": "../"
       },
-      {
-        "path": "../../WiringPi"
-      }
+      // {
+      //   "path": "../../WiringPi"
+      // }
     ],
     "settings": {
       // ----- C_Cpp --------------------------------------------------------------------------------
@@ -58,6 +58,7 @@
         "**/.git": true,
         "**/.vs": true
       },
+      "vscord.enabled": false,
       //intelesense ignore all files in  "../../WiringPi"
       
 

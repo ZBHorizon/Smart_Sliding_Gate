@@ -90,12 +90,24 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # FetchContent_MakeAvailable(Catch2)
 
+# #----------------------------------------------------------------------------------------------------------------------------------------#
+# # WiringPi #
+# #----------------------------------------------------------------------------------------------------------------------------------------#
+include(FetchContent)
+
+FetchContent_Declare(
+    WiringPi
+    GIT_REPOSITORY https://github.com/WiringPi/WiringPi.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(WiringPi)
+
 
 # GNUInstallDirs #
 #----------------------------------------------------------------------------------------------------------------------------------------#
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
   include(GNUInstallDirs) # In 3.26 still defect for multiarch CMAKE_INSTALL_LIBDIR - https://gitlab.kitware.com/cmake/cmake/-/issues/20565
-  set(CMAKE_INSTALL_LIBDIR "lib/${CMAKE_LIBRARY_ARCHITECTURE}/SkyTech")
+  set(CMAKE_INSTALL_LIBDIR "lib/${CMAKE_LIBRARY_ARCHITECTURE}/Smart_Sliding_Gate")
 endif()
 
 
@@ -146,6 +158,7 @@ endif()
 #----------------------------------------------------------------------------------------------------------------------------------------#
 add_subdirectory(src/SlidingGate)
 add_subdirectory(src)
+add_subdirectory(test)
 
 
 # Documentation #
