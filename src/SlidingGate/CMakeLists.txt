@@ -3,6 +3,7 @@ add_library(LibSlidingGate STATIC)
 set_target_properties(LibSlidingGate PROPERTIES OUTPUT_NAME sliding-gate)
 
 
+
 # Files #
 #----------------------------------------------------------------------------------------------------------------------------------------#
 include(CMakeFiles.txt)
@@ -23,10 +24,6 @@ target_include_directories(LibSlidingGate INTERFACE $<INSTALL_INTERFACE:include>
 #----------------------------------------------------------------------------------------------------------------------------------------#
 target_compile_features(LibSlidingGate PUBLIC cxx_std_20)
 
-
-# Linker #
-#----------------------------------------------------------------------------------------------------------------------------------------#
-target_link_libraries(LibSlidingGate PRIVATE wiringPi)
 
 # Installation #
 #----------------------------------------------------------------------------------------------------------------------------------------#

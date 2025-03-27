@@ -11,9 +11,7 @@
  */
 
 #include <SlidingGate/INA226.hpp>
-
-#include <wiringPi.h>
-#include <wiringPiI2C.h>
+#include <SlidingGate/IO.hpp>
 
 #include <stdexcept>
 #include <cstdint>
@@ -46,20 +44,20 @@ static inline std::int16_t swap_bytes(std::int16_t value) {
  */
 bool INA226::initialize() {
     // Set up the I2C interface for the INA226 sensor.
-    _i2c_fd = wiringPiI2CSetup(_INA226_I2C_ADDRESS);
+    _i2c_fd = IO::wiringPiI2CSetup(_INA226_I2C_ADDRESS);
     if (_i2c_fd < 0) {
         std::cerr << "Interface with address failed!" << std::endl;
         return false;
     }
 
     // Write the configuration register.
-    if (wiringPiI2CWriteReg16(_i2c_fd, _CONFIG_REGISTER, _CONFIG_VALUE) < 0) {
+    if (IO::wiringPiI2CWriteReg16(_i2c_fd, _CONFIG_REGISTER, _CONFIG_VALUE) < 0) {
         std::cerr << "write configuration register failed!" << std::endl;
         return false;
     }
 
     // Write the calibration register.
-    if (wiringPiI2CWriteReg16(_i2c_fd, _CALIBRATION_REGISTER, _CALIBRATION_VALUE) < 0) {
+    if (IO::wiringPiI2CWriteReg16(_i2c_fd, _CALIBRATION_REGISTER, _CALIBRATION_VALUE) < 0) {
         std::cerr << "write calibration register failed!" << std::endl;
         return false;
     }
@@ -78,7 +76,7 @@ bool INA226::initialize() {
  */
 float INA226::readCurrent_mA() {
     // Read the raw 16-bit value from the Current register.
-    int raw = wiringPiI2CReadReg16(_i2c_fd, _CURRENT_REGISTER);
+    int raw = IO::wiringPiI2CReadReg16(_i2c_fd, _CURRENT_REGISTER);
     if (raw < 0) {
         // Return NaN to indicate an error.
         return std::numeric_limits<float>::signaling_NaN();
@@ -103,7 +101,7 @@ float INA226::readCurrent_mA() {
 bool INA226::power_down()
 {
 // 1. Read the current config register value (16-bit).
-int raw_config = wiringPiI2CReadReg16(_i2c_fd, _CONFIG_REGISTER);
+int raw_config = IO::wiringPiI2CReadReg16(_i2c_fd, _CONFIG_REGISTER);
 if (raw_config < 0) {
     return false;
 }
@@ -115,7 +113,7 @@ config &= ~0b0000000000000111; // zero out bits 0..2
 
 // 4. Swap back and write to the device.
 std::int16_t write_val = swap_bytes(config);
-if (wiringPiI2CWriteReg16(_i2c_fd, _CONFIG_REGISTER, write_val) < 0) return false;
+if (IO::wiringPiI2CWriteReg16(_i2c_fd, _CONFIG_REGISTER, write_val) < 0) return false;
 
 return true;
 }
@@ -130,7 +128,7 @@ return true;
 bool INA226::wake_up()
 {
 // 1. Read the current config register value.
-int raw_config = wiringPiI2CReadReg16(_i2c_fd, _CONFIG_REGISTER);
+int raw_config = IO::wiringPiI2CReadReg16(_i2c_fd, _CONFIG_REGISTER);
 if (raw_config < 0) {
     return false;
 }
@@ -143,7 +141,7 @@ config |=  0b0000000000000111;   // set them to 111
 
 // 4. Swap back to big-endian and write.
 std::int16_t write_val = swap_bytes(config);
-if (wiringPiI2CWriteReg16(_i2c_fd, _CONFIG_REGISTER, write_val) < 0) return false;
+if (IO::wiringPiI2CWriteReg16(_i2c_fd, _CONFIG_REGISTER, write_val) < 0) return false;
 
 return true;
 }

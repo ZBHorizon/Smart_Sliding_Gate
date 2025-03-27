@@ -3,7 +3,8 @@
 #include <SlidingGate/Initialize.hpp>
 #include <SlidingGate/Motor.hpp>
 #include <SlidingGate/INA226.hpp>
-#include <wiringPi.h>
+#include <SlidingGate/IO.hpp>
+
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -72,9 +73,9 @@ void Control::remote_b_isr(){
 }
 
 void Control::remote_d_isr(){
-    digitalWrite(Pin::GARDEN_DOOR, HIGH);
+    IO::digitalWrite(Pin::GARDEN_DOOR, HIGH);
     std::this_thread::sleep_for(1000ms);
-    digitalWrite(Pin::GARDEN_DOOR, LOW);
+    IO::digitalWrite(Pin::GARDEN_DOOR, LOW);
 }
 
 void Control::user_input(){

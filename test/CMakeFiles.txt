@@ -4,27 +4,18 @@
 # set(TARGET_ASSETS_FILES "blabla.bla")
 
 set(TARGET_INCLUDE_FILES
-  "Event_handler.hpp"
-  "INA226.hpp"
-  "Initialize.hpp"
-  "job.hpp"
-  "Motor.hpp"
-  "Control.hpp"
-  "IO.hpp")
+  "test.hpp")
 
 set(TARGET_SOURCE_FILES
-  "INA226.cpp"
-  "Initialize.cpp"
-  "job.cpp"
-  "Motor.cpp"
-  "Control.cpp")
+  "main.cpp"
+  "test.cpp")
 
 
 # Directories #
 #----------------------------------------------------------------------------------------------------------------------------------------#
 # set(TARGET_ASSETS_DIR  "${PROJECT_SOURCE_DIR}/assets")
-set(TARGET_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/SlidingGate")
-set(TARGET_SOURCE_DIR  "${PROJECT_SOURCE_DIR}/src/SlidingGate")
+set(TARGET_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/include")
+set(TARGET_SOURCE_DIR  "${CMAKE_CURRENT_LIST_DIR}/src")
 
 
 # Upgrade to Absolute Paths #

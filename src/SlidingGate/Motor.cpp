@@ -6,8 +6,7 @@
 #include <SlidingGate/Initialize.hpp>
 #include <SlidingGate/INA226.hpp>
 #include <SlidingGate/job.hpp>
-
-#include <wiringPi.h>
+#include <SlidingGate/IO.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -22,8 +21,6 @@
 #include <list>
 #include <algorithm>
 #include <atomic>
-
-// WiringPi includes (Raspberry Pi)
 
 using namespace std::chrono;
 
@@ -75,9 +72,9 @@ void Motor::update_states() {
  * @brief Checks if any of the end switches are activated.
  */
 bool Motor::check_end_switches() {
-    if ((_motor_state == MotorState::Opening && !digitalRead(Pin::OPEN_SWITCH)) ||
-        (_motor_state == MotorState::Closing && !digitalRead(Pin::CLOSE_SWITCH)) || 
-        (_motor_state == MotorState::Closing && !digitalRead(Pin::LIGHT_BARRIER))) {
+    if ((_motor_state == MotorState::Opening && !IO::digitalRead(Pin::OPEN_SWITCH)) ||
+        (_motor_state == MotorState::Closing && !IO::digitalRead(Pin::CLOSE_SWITCH)) || 
+        (_motor_state == MotorState::Closing && !IO::digitalRead(Pin::LIGHT_BARRIER))) {
         std::cout << "check_end_switches() true" << std::endl;
             return true;
     }
@@ -138,7 +135,7 @@ void Motor::update_current_position() {
 
     // Calculate current position in percentage 
     if (_motor_state == MotorState::Opening) {
-        if (!digitalRead(Pin::OPEN_SWITCH)) {
+        if (!IO::digitalRead(Pin::OPEN_SWITCH)) {
             _actual_position = 1.0f;
         } else {
             float position = (static_cast<float>(current_position_ms.count()) * 100.0f) / 
@@ -150,7 +147,7 @@ void Motor::update_current_position() {
             _actual_position = (position > 0.99f) ? 0.95f : position;
         }
     }else if (_motor_state == MotorState::Closing) {
-        if (!digitalRead(Pin::CLOSE_SWITCH)) {
+        if (!IO::digitalRead(Pin::CLOSE_SWITCH)) {
             _actual_position = 0.0f;
         } else {
             float position = 100.0f - (static_cast<float>(current_position_ms.count()) * 100.0f) / 
@@ -191,7 +188,7 @@ void Motor::move_to_starting_position(float starting_position){
 
 void Motor::update_times (){
     static std::mutex update_times_mutex;
-    if (digitalRead(Pin::CLOSE_SWITCH)){
+    if (IO::digitalRead(Pin::CLOSE_SWITCH)){
         if (!_is_time_to_open_calibrated){
             std::cout << "measure time to open"
                     << std::endl;
@@ -209,14 +206,14 @@ void Motor::update_times (){
         std::unique_lock<std::mutex> lock(update_times_mutex);
         _open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
         open_switch_triggered = false; // reset flag after wake-up
-        if (digitalRead(Pin::OPEN_SWITCH)){
+        if (IO::digitalRead(Pin::OPEN_SWITCH)){
             milliseconds open_duration = duration_cast<milliseconds>(_stop_timestamp - _start_timestamp);
             avarage_time_to_open = append_time(avarage_time_to_open, open_duration);
             _time_to_open = average(avarage_time_to_open); //return the avrage value of all elemts in list
         }
         return;
     }
-    if (digitalRead(Pin::OPEN_SWITCH)){
+    if (IO::digitalRead(Pin::OPEN_SWITCH)){
         if (!_is_time_to_close_calibrated){
             std::cout << "measure time to close"
             << std::endl;
@@ -234,7 +231,7 @@ void Motor::update_times (){
         std::unique_lock<std::mutex> lock(update_times_mutex);
         _close_switch_cv.wait(lock, [&] { return close_switch_triggered; });
         close_switch_triggered = false; // reset flag after wake-up
-        if (digitalRead(Pin::CLOSE_SWITCH)){
+        if (IO::digitalRead(Pin::CLOSE_SWITCH)){
             milliseconds close_duration = duration_cast<milliseconds>(_stop_timestamp - _start_timestamp);
             avarage_time_to_close = append_time(avarage_time_to_close, close_duration);
             _time_to_close = average(avarage_time_to_close); //return the avrage value of all elemts in list
@@ -299,10 +296,10 @@ bool Motor::update_motor() {
  * @param speed Target speed.
  */
 void Motor::set_speed(float speed){
-    digitalWrite(Pin::DIRECTION, (speed >= 0 ? LOW : HIGH));
+    IO::digitalWrite(Pin::DIRECTION, (speed >= 0 ? LOW : HIGH));
     //set speed 0 - 128 (0-100%)
     uint8_t int_speed = static_cast<uint8_t>(std::abs(speed) * 128);
-    pwmWrite(Pin::PWM, int_speed);
+    IO::pwmWrite(Pin::PWM, int_speed);
     _actual_speed = speed;
     update_states();
     
