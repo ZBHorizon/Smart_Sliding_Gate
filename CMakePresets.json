@@ -18,25 +18,6 @@
       "hidden": true
     },
     {
-      "name": "android",
-      "displayName": "Android",
-      "description": "Build for Android on Windows",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "inherits": "ninja-multi",
-      "toolchainFile": "${sourceParentDir}/ThirdParty-Android-x86_64/android-sdk/ndk/26.0.10404224/build/cmake/android.toolchain.cmake",
-      "cacheVariables": {
-        "ANDROID_ABI": "x86_64",
-        "ANDROID_PLATFORM": "29"
-      },
-      "environment": {
-        "OPENALDIR": "${sourceParentDir}/ThirdParty-Android-x86_64/openal-1.21.1"
-      }
-    },
-    {
       "name": "linux-clang",
       "displayName": "CLang",
       "description": "Build with CLang",
@@ -113,9 +94,8 @@
         "strategy": "external"
       },
       "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "/usr/bin/aarch64-linux-gnu-g++"
-      },
-      "toolchainFile": "CMake/CMakeCross-aarch64-linux-gnu.txt"
+
+      }
     },
     {
       "name": "g++-x86_64-linux-gnu",
@@ -205,20 +185,6 @@
     }
   ],
   "buildPresets": [
-    {
-      "name": "android-debug",
-      "displayName": "Debug",
-      "description": "Build with debugging information",
-      "configuration": "Debug",
-      "configurePreset": "android"
-    },
-    {
-      "name": "android-release",
-      "displayName": "Release",
-      "description": "Optimize the resulting binaries",
-      "configuration": "Release",
-      "configurePreset": "android"
-    },
     {
       "name": "clang-aarch64-linux-gnu-debug",
       "displayName": "Debug",

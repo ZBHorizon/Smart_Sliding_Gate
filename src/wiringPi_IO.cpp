@@ -109,13 +109,13 @@ void IO::pwmWrite(int pin, int value) {
 // void pwmToneWrite(int pin, int freq) {
 //     ::pwmToneWrite(pin, freq);
 // }
-void pwmSetMode(int mode) {
+void IO::pwmSetMode(int mode) {
     ::pwmSetMode(mode);
 }
-void pwmSetRange(unsigned int range) {
+void IO::pwmSetRange(unsigned int range) {
     ::pwmSetRange(range);
 }
-void pwmSetClock(int divisor) {
+void IO::pwmSetClock(int divisor) {
     ::pwmSetClock(divisor);
 }
 // void gpioClockSet(int pin, int freq) {
@@ -133,16 +133,16 @@ void pwmSetClock(int divisor) {
 // void digitalWriteByte2(int value) {
 //     ::digitalWriteByte2(value);
 // }
-int waitForInterrupt(int pin, int mS) {
+int IO::waitForInterrupt(int pin, int mS) {
     return ::waitForInterrupt(pin, mS);
 }
-int wiringPiISR(int pin, int mode, void (*function)(void)) {
+int IO::wiringPiISR(int pin, int mode, void (*function)(void)) {
     return ::wiringPiISR(pin, mode, function);
 }
-int wiringPiISRStop(int pin) {
+int IO::wiringPiISRStop(int pin) {
     return ::wiringPiISRStop(pin);
 }
-int waitForInterruptClose(int pin) {
+int IO::waitForInterruptClose(int pin) {
     return ::waitForInterruptClose(pin);
 }
 // int piThreadCreate(void* (*fn)(void *)) {
@@ -157,10 +157,10 @@ int waitForInterruptClose(int pin) {
 // int piHiPri(const int pri) {
 //     return ::piHiPri(pri);
 // }
-void delay(unsigned int howLong) {
+void IO::delay(unsigned int howLong) {
     ::delay(howLong);
 }
-void delayMicroseconds(unsigned int howLong) {
+void IO::delayMicroseconds(unsigned int howLong) {
     ::delayMicroseconds(howLong);
 }
 // unsigned int millis(void) {
@@ -178,7 +178,7 @@ void delayMicroseconds(unsigned int howLong) {
 // int wiringPiI2CReadReg8(int fd, int reg) {
 //     return ::wiringPiI2CReadReg8(fd, reg);
 // }
-int wiringPiI2CReadReg16(int fd, int reg) {
+int IO::wiringPiI2CReadReg16(int fd, int reg) {
     return ::wiringPiI2CReadReg16(fd, reg);
 }
 // int wiringPiI2CReadBlockData(int fd, int reg, uint8_t *values, uint8_t size) {
@@ -193,7 +193,7 @@ int wiringPiI2CReadReg16(int fd, int reg) {
 // int wiringPiI2CWriteReg8(int fd, int reg, int data) {
 //     return ::wiringPiI2CWriteReg8(fd, reg, data);
 // }
-int wiringPiI2CWriteReg16(int fd, int reg, int data) {
+int IO::wiringPiI2CWriteReg16(int fd, int reg, int data) {
     return ::wiringPiI2CWriteReg16(fd, reg, data);
 }
 // int wiringPiI2CWriteBlockData(int fd, int reg, const uint8_t *values, uint8_t size) {
@@ -205,7 +205,7 @@ int wiringPiI2CWriteReg16(int fd, int reg, int data) {
 // int wiringPiI2CSetupInterface(const char *device, int devId) {
 //     return ::wiringPiI2CSetupInterface(device, devId);
 // }
-int wiringPiI2CSetup(const int devId) {
+int IO::wiringPiI2CSetup(const int devId) {
     return ::wiringPiI2CSetup(devId);
 }
 } // namespace SladingGate
