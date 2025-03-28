@@ -27,13 +27,13 @@ int main() {
     // Start the motor loop in a separate thread.
     std::thread motor_thread(&Motor::motor_loop);
 
-    std::thread gate_thread(&GateSimulator::simulation_loop);
+    //std::thread gate_thread(&GateSimulator::simulation_loop);
 
     while (true) {
         Control::control_loop();
     }
 
     motor_thread.join();
-    gate_thread.join();
+    //gate_thread.join();
     return 0;
 }

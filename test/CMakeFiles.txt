@@ -4,11 +4,13 @@
 # set(TARGET_ASSETS_FILES "blabla.bla")
 
 set(TARGET_INCLUDE_FILES
-  "test.hpp")
+  "test.hpp"
+  "simualtor.hpp")
 
 set(TARGET_SOURCE_FILES
   "main.cpp"
-  "test.cpp")
+  "test.cpp"
+  "simulator.cpp")
 
 
 # Directories #
