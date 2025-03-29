@@ -10,7 +10,10 @@ set(TARGET_INCLUDE_FILES
   "job.hpp"
   "Motor.hpp"
   "Control.hpp"
-  "IO.hpp")
+  "IO.hpp"
+  "Log.hpp"
+  "Log/File.hpp"
+  "Log/Stream.hpp")
 
 set(TARGET_SOURCE_FILES
   "INA226.cpp"

@@ -1,12 +1,16 @@
-add_executable(IO_Test)
-set_target_properties(IO_Test PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+include(CMakeFiles.txt)
 
+qt_add_executable(IO_Test ${TARGET_SOURCE_FILES} ${TARGET_ASSETS_FILES})
+set_target_properties(IO_Test PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} WIN32_EXECUTABLE TRUE)
+
+# Setze AUTOUIC_SEARCH_PATHS, damit uic in assets sucht
+set_target_properties(IO_Test PROPERTIES AUTOUIC_SEARCH_PATHS "${CMAKE_CURRENT_LIST_DIR}/assets")
 
 # Files #
 #----------------------------------------------------------------------------------------------------------------------------------------#
-include(CMakeFiles.txt)
+#include(CMakeFiles.txt)
 
-target_sources(IO_Test PRIVATE ${TARGET_ASSETS_FILES} ${TARGET_SOURCE_FILES})
+#target_sources(IO_Test PRIVATE ${TARGET_ASSETS_FILES} ${TARGET_SOURCE_FILES})
 
 # Includes #
 #----------------------------------------------------------------------------------------------------------------------------------------#
@@ -16,11 +20,21 @@ target_include_directories(IO_Test PRIVATE ${TARGET_INCLUDE_DIR})
 #----------------------------------------------------------------------------------------------------------------------------------------#
 #target_compile_definitions(IO_Test PRIVATE ASSETS_PATH="${CMAKE_CURRENT_LIST_DIR}/Assets")
 
+target_compile_options(IO_Test PRIVATE /Zc:__cplusplus)
 
 # Linker #
 #----------------------------------------------------------------------------------------------------------------------------------------#
-target_link_libraries(IO_Test PRIVATE LibSlidingGate)
+target_link_libraries(IO_Test PRIVATE LibSlidingGate Qt${QT_VERSION_MAJOR}::Widgets)
 
+#qt_finalize_executable(IO_Test)
+
+if(WIN32)
+  # Deploy required Qt DLLs using windeployqt.
+  add_custom_command(TARGET IO_Test POST_BUILD
+    COMMAND "C:/Qt/6.8.3/msvc2022_64/bin/windeployqt" $<TARGET_FILE:IO_Test>
+    COMMENT "Deploying Qt DLLs using windeployqt"
+  )
+endif()
 
 # Execution #
 #----------------------------------------------------------------------------------------------------------------------------------------#

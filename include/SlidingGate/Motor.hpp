@@ -91,6 +91,8 @@ private:
 
     inline static bool _overcurrent_active = false;  ///< Initialization
 
+    static std::thread time_thread; ///< Thread for time measurement
+
     /**
      * @brief Motor states.
      */

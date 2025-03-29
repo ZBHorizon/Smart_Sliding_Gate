@@ -55,7 +55,6 @@ namespace SlidingGate {
         IO::wiringPiISR(Pin::LIGHT_BARRIER, INT_EDGE_FALLING, Motor::light_barrier_isr);
         IO::wiringPiISR(Pin::CLOSE_SWITCH, INT_EDGE_FALLING, Motor::close_switch_isr);
         IO::wiringPiISR(Pin::OPEN_SWITCH, INT_EDGE_FALLING, Motor::open_switch_isr);
-        std::cout << "GPIO initialized successfully." << std::endl;
         return true;
     }
 

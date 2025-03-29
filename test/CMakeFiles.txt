@@ -1,27 +1,30 @@
 #----------------------------------------------------------------------------------------------------------------------------------------#
 #///////// Files ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------------------------------------------------------------------------#
-# set(TARGET_ASSETS_FILES "blabla.bla")
+set(TARGET_ASSETS_FILES "mainwindow.ui")
 
 set(TARGET_INCLUDE_FILES
   "test.hpp"
-  "simualtor.hpp")
+  "simualtor.hpp"
+  "mainwindow.hpp")
 
 set(TARGET_SOURCE_FILES
   "main.cpp"
   "test.cpp"
-  "simulator.cpp")
+  "simulator.cpp"
+  "mainwindow.cpp"
+  )
 
 
 # Directories #
 #----------------------------------------------------------------------------------------------------------------------------------------#
-# set(TARGET_ASSETS_DIR  "${PROJECT_SOURCE_DIR}/assets")
+set(TARGET_ASSETS_DIR  "${CMAKE_CURRENT_LIST_DIR}/assets")
 set(TARGET_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/include")
 set(TARGET_SOURCE_DIR  "${CMAKE_CURRENT_LIST_DIR}/src")
 
 
 # Upgrade to Absolute Paths #
 #----------------------------------------------------------------------------------------------------------------------------------------#
-# list(TRANSFORM TARGET_ASSETS_FILES  PREPEND "${TARGET_ASSETS_DIR}/")
+list(TRANSFORM TARGET_ASSETS_FILES  PREPEND "${TARGET_ASSETS_DIR}/")
 list(TRANSFORM TARGET_INCLUDE_FILES PREPEND "${TARGET_INCLUDE_DIR}/")
 list(TRANSFORM TARGET_SOURCE_FILES  PREPEND "${TARGET_SOURCE_DIR}/")

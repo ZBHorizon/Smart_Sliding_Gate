@@ -1,166 +1,152 @@
+#define WIN32_LEAN_AND_MEAN 
+#include <Windows.h>
+#include <DbgHelp.h>
+#ifdef _WIN32
+#pragma comment(lib, "Dbghelp.lib")
+#endif
+#undef INPUT  // remove Windows' INPUT macro
+
 #include <test.hpp>
+#include <SlidingGate/Log.hpp>
+
 #include <SlidingGate/IO.hpp>
 #include <SlidingGate/Initialize.hpp>
+
 #include <algorithm>
 #include <string>
-
+#include <cstdlib>
 
 namespace SlidingGate {
-
-
 
 /* wiringPiSetup() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::wiringPiSetup() {
-    return Test_IO::wiringPiSetup();
-}
-int Test_IO::wiringPiSetup() {
-    wiringpi_setup_called = true;
-    std::cout << "[Sim] wiringPiSetup called." << std::endl;
+    Test_IO::wiringpi_setup_called = true;
+    LOG_INFO() << "wiringPiSetup called." ;
     return 0;
 }
 
 /* pinMode() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::pinMode(int pin, int mode) {
-    Test_IO::pinMode(pin, mode);
-}
-void Test_IO::pinMode(int pin, int mode) {
-    check_wiringPiSetup();
-    pin_states[pin] = PinState{0.0f, 0.0f, mode, 0, nullptr, -1}; // Initialize pin state
-    check_Pin(pin, "pinMode");
-    std::cout << "[Sim] pinMode: Pin " << pin 
-              << " (" << getPinName(pin) << ") set to mode " << pinModeToString(mode) << "." << std::endl;
+    Test_IO::check_wiringPiSetup();
+    Test_IO::pin_states[pin] = Test_IO::PinState{0.0f, 0.0f, mode, 0, nullptr, -1}; // Initialize pin state
+    Test_IO::check_Pin(pin, "pinMode");
+    LOG_INFO() << "pinMode: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+             << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+             << ") set to mode " << Test_IO::ORANGE << Test_IO::pinModeToString(mode) << Test_IO::RESET << ".";
 }
 
 /* pullUpDnControl() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::pullUpDnControl(int pin, int pud) {
-    Test_IO::pullUpDnControl(pin, pud);
-}
-void Test_IO::pullUpDnControl(int pin, int pud) {
-    check_wiringPiSetup();
-    check_Pin(pin, "pullUpDnControl");
+    Test_IO::check_wiringPiSetup();
+    Test_IO::check_Pin(pin, "pullUpDnControl");
 
-    pin_states[pin].pullUpDown = pud; // Set pull-up/down mode
-    std::cout << "[Sim] pullUpDnControl: Pin " << pin 
-              << " (" << getPinName(pin) << ") set to pull " << pullUpToString(pud) << "." << std::endl;
+    // Set pull-up/down mode
+    LOG_INFO() << "pullUpDnControl: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+             << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+             << ") set to pull " << Test_IO::ORANGE << Test_IO::pullUpToString(pud) << Test_IO::RESET << ".";
 }
 
 /* digitalRead() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::digitalRead(int pin) {
-    return Test_IO::digitalRead(pin);
-}
-int Test_IO::digitalRead(int pin) {
-    check_wiringPiSetup();
-    check_Pin(pin, "digitalRead");
+    Test_IO::check_wiringPiSetup();
+    Test_IO::check_Pin(pin, "digitalRead");
 
-    int state = (pin_states[pin].current_signal > 0.0f) ? LOW : HIGH; 
+    int state = (Test_IO::pin_states[pin].current_signal > 0.0f) ? LOW : HIGH; 
 
-    std::cout << "[Sim] digitalRead: Pin " << pin 
-              << " (" << getPinName(pin) << ") reads " << digitalValToString(state) << "." << std::endl;
+    LOG_INFO() << "digitalRead: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+             << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+             << ") reads " << Test_IO::ORANGE << Test_IO::digitalValToString(state) << Test_IO::RESET << ".";
     return state;
 }
 
 /* digitalWrite() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::digitalWrite(int pin, int value) {
-    Test_IO::digitalWrite(pin, value);
-}
-void Test_IO::digitalWrite(int pin, int value) {
-    check_wiringPiSetup();
-    check_Pin(pin, "digitalWrite");
+    Test_IO::check_wiringPiSetup();
+    Test_IO::check_Pin(pin, "digitalWrite");
 
     // only allow 0 or 1.
     if (value != LOW && value != HIGH) {
-        std::cerr << "\033[31m" << "[Sim] Error: Invalid digital value for pin " << pin 
-                  << " (" << getPinName(pin) << "), Only LOW or HIGH allowed." << std::endl;
+        LOG_ERROR() << "Error: Invalid digital value for pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+                  << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+                  << "), only LOW or HIGH allowed.";
     }
-    pin_states[pin].previous_signal = pin_states[pin].current_signal; // Update previous signal
-    pin_states[pin].current_signal = (value == LOW) ? 0.0f : 1.0f; 
-    std::cout << "[Sim] digitalWrite: Pin " << pin 
-              << " (" << getPinName(pin) << ") set to " << digitalValToString(value) << "." << std::endl;
+    Test_IO::pin_states[pin].previous_signal = Test_IO::pin_states[pin].current_signal; // Update previous signal
+    Test_IO::pin_states[pin].current_signal = (value == LOW) ? 0.0f : 1.0f; 
+    LOG_INFO() << "digitalWrite: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+             << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+             << ") set to " << Test_IO::ORANGE << Test_IO::digitalValToString(value) << Test_IO::RESET << ".";
 }
 
 /* pwmWrite() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::pwmWrite(int pin, int value) {
-    Test_IO::pwmWrite(pin, value);
-}
-void Test_IO::pwmWrite(int pin, int value) {
-    check_wiringPiSetup();
-    check_Pin(pin, "digitalWrite");
+    Test_IO::check_wiringPiSetup();
+    Test_IO::check_Pin(pin, "pwmWrite");
 
-    if (_global_PWM::PWM_MODE == -1) {
-        std::cerr << "\033[31m" << "[Sim] Error: PWM mode not set." << std::endl;
+    if (Test_IO::global_PWM::PWM_MODE == -1) {
+        LOG_ERROR() << "Error: PWM mode not set.";
     }
-    if (_global_PWM::PWM_CLOCK == -1) {
-        std::cerr << "\033[31m" << "[Sim] Error: PWM clock not set." << std::endl;
+    if (Test_IO::global_PWM::PWM_CLOCK == -1) {
+        LOG_ERROR() << "Error: PWM clock not set.";
     }
-    if (_global_PWM::PWM_RANGE == -1) {
-        std::cerr << "\033[31m" << "[Sim] Error: PWM range not set." << std::endl;
+    if (Test_IO::global_PWM::PWM_RANGE == -1) {
+        LOG_ERROR() << "Error: PWM range not set.";
     }
-    if (value > _global_PWM::PWM_RANGE || value < 0) {
-        std::cerr << "\033[31m" << "[Sim] Error: pwmWrite value for pin " << pin 
-                  << " (" << getPinName(pin) << "), exceeds the set PWM range of " << _global_PWM::PWM_RANGE << " ." << std::endl;
+    if (value > Test_IO::global_PWM::PWM_RANGE || value < 0) {
+        LOG_ERROR() << "Error: pwmWrite value for pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+                  << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+                  << ") exceeds the set PWM range of " << Test_IO::ORANGE << Test_IO::global_PWM::PWM_RANGE << Test_IO::RESET << ".";
     }
-    float converted_value = static_cast<float>(value / _global_PWM::PWM_RANGE); 
-    pin_states[pin].previous_signal = pin_states[pin].current_signal; // Update previous signal
-    pin_states[pin].current_signal = converted_value;
-    std::cout << "[Sim] pwmWrite: Pin " << pin 
-              << " (" << getPinName(pin) << ") PWM value " << value << " set." << std::endl;
+    float converted_value = static_cast<float>(value / Test_IO::global_PWM::PWM_RANGE); 
+    Test_IO::pin_states[pin].previous_signal = Test_IO::pin_states[pin].current_signal; // Update previous signal
+    Test_IO::pin_states[pin].current_signal = converted_value;
+    LOG_INFO() << "pwmWrite: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+             << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+             << ") PWM value " << Test_IO::ORANGE << value << Test_IO::RESET << " set.";
 }
 
 /* pwmSetMode() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::pwmSetMode(int mode) {
-    Test_IO::pwmSetMode(mode);
-}
-void Test_IO::pwmSetMode(int mode) {
-    check_wiringPiSetup();
-    _global_PWM::PWM_MODE = mode;
-    std::cout << "[Sim] pwmSetMode: Mode " << pwmModeToString(mode) << " set." << std::endl;
+    Test_IO::check_wiringPiSetup();
+    Test_IO::global_PWM::PWM_MODE = mode;
+    LOG_INFO() << "pwmSetMode: Mode " << Test_IO::ORANGE << Test_IO::pwmModeToString(mode) << Test_IO::RESET << " set.";
 }
 
 /* pwmSetRange() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::pwmSetRange(std::uint32_t range) {
-    Test_IO::pwmSetRange(range);
-}
-void Test_IO::pwmSetRange(std::uint32_t range) {
-    check_wiringPiSetup();
+    Test_IO::check_wiringPiSetup();
     if (range == 0) {
-        std::cerr << "\033[31m" << "[Sim] Error:  PWM range cannot be zero . " << std::endl;
+        LOG_ERROR() << "Error: PWM range cannot be zero.";
     }
-    _global_PWM::PWM_RANGE = range;
-    std::cout << "[Sim] pwmSetRange: Range " << range << " set." << std::endl;
+    Test_IO::global_PWM::PWM_RANGE = range;
+    LOG_INFO() << "pwmSetRange: Range " << Test_IO::ORANGE << range << Test_IO::RESET << " set.";
 }
 
 /* pwmSetClock() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::pwmSetClock(int divisor) {
-    Test_IO::pwmSetClock(divisor);
-}
-void Test_IO::pwmSetClock(int divisor) {
-    check_wiringPiSetup();
+    Test_IO::check_wiringPiSetup();
     if (divisor <= 0) {
-        std::cerr << "\033[31m" << "[Sim] Error: PWM clock divisor must be positive." << std::endl;
+        LOG_ERROR() << "Error: PWM clock divisor must be positive.";
     }
-    _global_PWM::PWM_CLOCK = divisor;
-    std::cout << "[Sim] pwmSetClock: Divisor " << divisor << " set." << std::endl;
+    Test_IO::global_PWM::PWM_CLOCK = divisor;
+    LOG_INFO() << "pwmSetClock: Divisor " << Test_IO::ORANGE << divisor << Test_IO::RESET << " set.";
 }
 
 /* waitForInterrupt() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::waitForInterrupt(int pin, int mS) {
-    return Test_IO::waitForInterrupt(pin, mS);
-}
-int Test_IO::waitForInterrupt(int pin, int mS) {
     // if (!wiringpi_setup_called) {
     //     throw std::runtime_error("Error: wiringPiSetup must be called before waitForInterrupt.");
     // }
-    // std::cout << "[Sim] waitForInterrupt: Waiting on pin " << pin << " for " << mS << " ms." << std::endl;
+    // LOG_INFO() << "waitForInterrupt: Waiting on pin " << pin << " for " << mS << " ms." ;
     // std::this_thread::sleep_for(std::chrono::milliseconds(mS));
     return 0;
 }
@@ -168,32 +154,27 @@ int Test_IO::waitForInterrupt(int pin, int mS) {
 /* wiringPiISR() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::wiringPiISR(int pin, int mode, void (*function)(void)) {
-    return Test_IO::wiringPiISR(pin, mode, function);
-}
-int Test_IO::wiringPiISR(int pin, int mode, void (*function)(void)) {
-    check_wiringPiSetup();
-    pin_states[pin].isr_mode = mode; // Set ISR mode
-    pin_states[pin].isr_function = function; // Store the ISR function
-    std::cout << "[Sim] wiringPiISR: ISR for pin " << pin << " with mode " << mode << " registered." << std::endl;
-    std::cout << "[Sim] wiringPiISR: ISR for pin " << pin 
-              << " (" << getPinName(pin) << ") with mode " << isrModeToString(mode) << " registered." << std::endl;
+    Test_IO::check_wiringPiSetup();
+    Test_IO::pin_states[pin].isr_mode = mode; // Set ISR mode
+    Test_IO::pin_states[pin].isr_function = function; // Store the ISR function
+    LOG_INFO() << "wiringPiISR: ISR for pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+             << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+             << ") with mode " << Test_IO::ORANGE << Test_IO::isrModeToString(mode) << Test_IO::RESET
+             << " and function " << Test_IO::ORANGE << Test_IO::isrfuntionNameToString(function) << Test_IO::RESET << " registered.";
     return 0;
 }
 
 /* wiringPiISRStop() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::wiringPiISRStop(int pin) {
-    return Test_IO::wiringPiISRStop(pin);
-}
-int Test_IO::wiringPiISRStop(int pin) {
     // // std::lock_guard<std::mutex> lock(mtx);
     // if (!wiringpi_setup_called) {
     //     throw std::runtime_error("Error: wiringPiSetup must be called before wiringPiISRStop.");
     // }
     // if (isr_map.erase(pin) == 0) {
-    //     std::cerr << "[Sim] wiringPiISRStop: No ISR registered for pin " << pin << "." << std::endl;
+    //     LOG_ERROR() << "wiringPiISRStop: No ISR registered for pin " << pin << "." ;
     // } else {
-    //     std::cout << "[Sim] wiringPiISRStop: ISR for pin " << pin << " stopped." << std::endl;
+    //     LOG_INFO() << "wiringPiISRStop: ISR for pin " << pin << " stopped." ;
     // }
     return 0;
 }
@@ -201,109 +182,93 @@ int Test_IO::wiringPiISRStop(int pin) {
 /* waitForInterruptClose() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::waitForInterruptClose(int pin) {
-    return Test_IO::waitForInterruptClose(pin);
-}
-int Test_IO::waitForInterruptClose(int pin) {
     // if (!wiringpi_setup_called) {
     //     throw std::runtime_error("Error: wiringPiSetup must be called before waitForInterruptClose.");
     // }
-    // std::cout << "[Sim] waitForInterruptClose: Waiting for close interrupt on pin " << pin << "." << std::endl;
+    // LOG_INFO() << "waitForInterruptClose: Waiting for close interrupt on pin " << pin << "." ;
     return 0;
 }
 
 /* delay() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::delay(std::uint32_t howLong) {
-    Test_IO::delay(howLong);
-}
-void Test_IO::delay(std::uint32_t howLong) {
     // if (!wiringpi_setup_called) {
     //     throw std::runtime_error("Error: wiringPiSetup must be called before delay.");
     // }
-    // std::cout << "[Sim] delay: Waiting " << howLong << " ms." << std::endl;
+    // LOG_INFO() << "delay: Waiting " << howLong << " ms." ;
     // std::this_thread::sleep_for(std::chrono::milliseconds(howLong));
 }
 
 /* delayMicroseconds() */
 /*------------------------------------------------------------------------------------------------------------------*/
 void IO::delayMicroseconds(std::uint32_t howLong) {
-    Test_IO::delayMicroseconds(howLong);
-}
-void Test_IO::delayMicroseconds(std::uint32_t howLong) {
     // if (!wiringpi_setup_called) {
     //     throw std::runtime_error("Error: wiringPiSetup must be called before delayMicroseconds.");
     // }
-    // std::cout << "[Sim] delayMicroseconds: Waiting " << howLong << " µs." << std::endl;
+    // LOG_INFO() << "delayMicroseconds: Waiting " << howLong << " µs." ;
     // std::this_thread::sleep_for(std::chrono::microseconds(howLong));
 }
 
 /* wiringPiI2CReadReg16() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::wiringPiI2CReadReg16(int fd, int reg) {
-    return Test_IO::wiringPiI2CReadReg16(fd, reg);
-}
-int Test_IO::wiringPiI2CReadReg16(int fd, int reg) {
     // if (!wiringpi_setup_called) {
     //     throw std::runtime_error("Error: wiringPiSetup must be called before wiringPiI2CReadReg16.");
     // }
-    // std::cout << "[Sim] wiringPiI2CReadReg16: fd " << fd << ", Register " << reg << " read." << std::endl;
+    // LOG_INFO() << "wiringPiI2CReadReg16: fd " << fd << ", Register " << reg << " read." ;
     return 123; // Example value
 }
 
 /* wiringPiI2CWriteReg16() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::wiringPiI2CWriteReg16(int fd, int reg, int data) {
-    return Test_IO::wiringPiI2CWriteReg16(fd, reg, data);
-}
-int Test_IO::wiringPiI2CWriteReg16(int fd, int reg, int data) {
     // if (!wiringpi_setup_called) {
     //     throw std::runtime_error("Error: wiringPiSetup must be called before wiringPiI2CWriteReg16.");
     // }
-    // std::cout << "[Sim] wiringPiI2CWriteReg16: fd " << fd << ", Register " << reg << ", Data " << data << " written." << std::endl;
+    // LOG_INFO() << "wiringPiI2CWriteReg16: fd " << fd << ", Register " << reg << ", Data " << data << " written." ;
     return 0;
 }
 
 /* wiringPiI2CSetup() */
 /*------------------------------------------------------------------------------------------------------------------*/
 int IO::wiringPiI2CSetup(const int devId) {
-    return Test_IO::wiringPiI2CSetup(devId);
-}
-int Test_IO::wiringPiI2CSetup(const int devId) {
     // if (!wiringpi_setup_called) {
     //     throw std::runtime_error("Error: wiringPiSetup must be called before wiringPiI2CSetup.");
     // }
-    // std::cout << "[Sim] wiringPiI2CSetup: Device ID " << devId << " initialized." << std::endl;
+    // LOG_INFO() << "wiringPiI2CSetup: Device ID " << devId << " initialized." ;
     return 1; // Dummy file descriptor
 }
 
-
 void Test_IO::isr_sim_update(int pin) {
-    if (pin_states[pin].isr_mode == -1) return; // No ISR registered
+    if (Test_IO::pin_states[pin].isr_mode == -1) return; // No ISR registered
 
-    if (pin_states[pin].current_signal == pin_states[pin].previous_signal) {
+    if (Test_IO::pin_states[pin].current_signal == Test_IO::pin_states[pin].previous_signal) {
         return;
     }
-    if (pin_states[pin].isr_mode == INT_EDGE_RISING && !(pin_states[pin].current_signal == 1.0f && pin_states[pin].previous_signal == 0.0f)) {
+    if (Test_IO::pin_states[pin].isr_mode == INT_EDGE_RISING && !(Test_IO::pin_states[pin].current_signal == 1.0f && Test_IO::pin_states[pin].previous_signal == 0.0f)) {
         return;
     }
-    if (pin_states[pin].isr_mode == INT_EDGE_FALLING && !(pin_states[pin].current_signal == 1.0f && pin_states[pin].previous_signal == 0.0f)) {
+    if (Test_IO::pin_states[pin].isr_mode == INT_EDGE_FALLING && !(Test_IO::pin_states[pin].current_signal == 1.0f && Test_IO::pin_states[pin].previous_signal == 0.0f)) {
         return;
     }
-    if (pin_states[pin].isr_mode == INT_EDGE_BOTH && pin_states[pin].current_signal == pin_states[pin].previous_signal) {
+    if (Test_IO::pin_states[pin].isr_mode == INT_EDGE_BOTH && Test_IO::pin_states[pin].current_signal == Test_IO::pin_states[pin].previous_signal) {
         return;
     }
-    std::thread isr_thread(pin_states[pin].isr_function);
+    std::thread isr_thread(Test_IO::pin_states[pin].isr_function);
     isr_thread.detach(); // Detach the thread to allow it to run independently
-    std::cout << "[Sim] ISR triggered on pin " << pin 
-              << " (" << getPinName(pin) << ") with mode " << isrModeToString(pin_states[pin].isr_mode) << "." << std::endl;
+    LOG_INFO() << "ISR triggered on pin " << Test_IO::ORANGE << pin << Test_IO::RESET
+             << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
+             << ") with mode " << Test_IO::ORANGE << isrModeToString(Test_IO::pin_states[pin].isr_mode) << Test_IO::RESET << ".";
 }
 
-
-
-void Test_IO::set_input(int pin, int value){
-        pin_states[pin].previous_signal = pin_states[pin].current_signal; // Update previous signal
-        pin_states[pin].current_signal = value;
+void Test_IO::set_pin(int pin, int value){
+        Test_IO::pin_states[pin].previous_signal = Test_IO::pin_states[pin].current_signal; // Update previous signal
+        Test_IO::pin_states[pin].current_signal = value;
         isr_sim_update(pin);   
+}
+
+float Test_IO::read_pin(int pin){
+    return Test_IO::pin_states[pin].current_signal;
 }
 
 // float Test_Test_IO::get_current_motor_speed(){
@@ -316,25 +281,25 @@ void Test_IO::set_input(int pin, int value){
 
 void Test_IO::check_wiringPiSetup(){
     if (!wiringpi_setup_called) {
-        std::cerr << "\033[31m" << "[Sim] Error: wiringPiSetup must be called before." << std::endl;
+        LOG_ERROR() <<  "Error: wiringPiSetup must be called before." ;
     }
 }
 
 void Test_IO::check_Pin(int pin, std::string function_name) {
     if (std::find(addressable_gpio_pins.begin(), addressable_gpio_pins.end(), pin) == addressable_gpio_pins.end()) {
-        std::cerr << "\033[31m" << "[Sim] Error: Pin " << pin << " is not a valid GPIO pin " << " in " << function_name << " ." << std::endl;
+        LOG_ERROR() <<  "Error: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET << " is not a valid GPIO pin " << " in " << function_name << " ." ;
     }
-    if (pin_states.find(pin) == pin_states.end()) {
-        std::cerr << "\033[31m" << "[Sim] Error: pinMode not set for pin " << pin << " in " << function_name << " ." << std::endl;
+    if (Test_IO::pin_states.find(pin) == Test_IO::pin_states.end()) {
+        LOG_ERROR() <<  "Error: pinMode not set for pin " << Test_IO::ORANGE << pin << Test_IO::RESET << " in " << function_name << " ." ;
     }
-    if (pin_states[pin].pin_mode != INPUT && function_name == "PullUpDnControl") {
-        std::cerr << "\033[31m" << "[Sim] Error: " << function_name << " attempted on pin " << pin << " not configured as INPUT." << std::endl;
+    if (Test_IO::pin_states[pin].pin_mode != INPUT && function_name == "PullUpDnControl") {
+        LOG_ERROR() <<  "Error: " << function_name << " attempted on pin " << Test_IO::ORANGE << pin << Test_IO::RESET << " not configured as INPUT." ;
     }
-    if (pin_states[pin].pin_mode != OUTPUT && function_name == "digitalWrite") {
-        std::cerr << "\033[31m" << "[Sim] Error: " << function_name << " attempted on pin " << pin << " not configured as OUTPUT." << std::endl;
+    if (Test_IO::pin_states[pin].pin_mode != OUTPUT && function_name == "digitalWrite") {
+        LOG_ERROR() <<  "Error: " << function_name << " attempted on pin " << Test_IO::ORANGE << pin << Test_IO::RESET << " not configured as OUTPUT." ;
     }
-    if (pin_states[pin].pin_mode != PWM_OUTPUT && function_name == "pwmWrite") {
-        std::cerr << "\033[31m" << "[Sim] Error: " << function_name << " attempted on pin " << pin << " not configured as PWM_OUTPUT." << std::endl;
+    if (Test_IO::pin_states[pin].pin_mode != PWM_OUTPUT && function_name == "pwmWrite") {
+        LOG_ERROR() <<  "Error: " << function_name << " attempted on pin " << Test_IO::ORANGE << pin << Test_IO::RESET << " not configured as PWM_OUTPUT." ;
     }
 }
 
@@ -388,6 +353,22 @@ std::string Test_IO::isrModeToString(int mode) {
     }
 }
 
+std::string Test_IO::isrfuntionNameToString(void (*function)(void)) {
+#ifdef _WIN32
+    HANDLE process = GetCurrentProcess();
+    static bool symInitialized = [] {
+        return SymInitialize(GetCurrentProcess(), nullptr, TRUE);
+    }();
+    if (!symInitialized) return "Unknown function";
+    DWORD64 address = reinterpret_cast<DWORD64>(function);
+    char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)] = {};
+    auto symbol = reinterpret_cast<PSYMBOL_INFO>(buffer);
+    symbol->SizeOfStruct = sizeof(SYMBOL_INFO); symbol->MaxNameLen = MAX_SYM_NAME;
+    return SymFromAddr(process, address, nullptr, symbol) ? std::string(symbol->Name) : "Unknown function";
+#else
+    return "Function name not available";
+#endif
+}
 
 std::string Test_IO::getPinName(int pin) {
     switch(pin) {

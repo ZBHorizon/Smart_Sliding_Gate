@@ -47,6 +47,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_CXX_MODULE_STD ON)
 
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
 
 # clang-tidy #
 #----------------------------------------------------------------------------------------------------------------------------------------#
@@ -89,6 +93,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #   GIT_TAG        v3.5.4)
 
 # FetchContent_MakeAvailable(Catch2)
+
+# #----------------------------------------------------------------------------------------------------------------------------------------#
+# # Qt #
+# #----------------------------------------------------------------------------------------------------------------------------------------#
+if (CMAKE_SYSTEM_NAME STREQUAL Windows)
+  #set(QT_DIR "C:/Qt/6.8.3/mingw_64")
+  list(APPEND CMAKE_PREFIX_PATH "C:/Qt/6.8.3/msvc2022_64/lib/cmake")
+
+  if(MSVC) 
+  string(REPLACE "/source-charset:.28605" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
+  endif()
+  
+  #set(CMAKE_INCLUDE_PATH "C:/Qt/6.5.2/msvc2019_64/include")
+  find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+endif()
 
 # #----------------------------------------------------------------------------------------------------------------------------------------#
 # # WiringPi #

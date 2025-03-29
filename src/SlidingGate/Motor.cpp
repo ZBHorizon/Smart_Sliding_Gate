@@ -255,13 +255,15 @@ float Motor::read_position(){
  */
 void Motor::motor_loop() {
     while (true) {
-        //condition variable wait check if job set. muss solange schlafen bis ein neuer job gesetzt wurde wenn kein job mehr anliegt
+        // condition variable wait: schlafe, bis job::ready true ist
         std::unique_lock<std::mutex> lock(motor_mutex);
-		if (!job::is_job_active()) {
-            motor_cv.wait(lock, [&] { return job::ready; });
+        if (!job::is_job_active()) {
+            motor_cv.wait(lock, [] { return job::ready; });
             std::thread time_thread(&Motor::update_times);
+            time_thread.detach();
             job::ready = false;
-		}
+        }
+        // ... weiterer Code im Loop
 
         //check_for_overcurrent();
 
