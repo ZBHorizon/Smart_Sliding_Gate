@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 
     //std::thread gate_thread(&GateSimulator::simulation_loop);
     std::thread control_thread(&Control::control_loop);
-
+    
     QApplication a(argc, argv);
     MainWindow w;
     w.show();

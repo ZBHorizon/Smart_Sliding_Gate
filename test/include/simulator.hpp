@@ -47,6 +47,12 @@ public:
     inline static std::string str_LAMP = "empty";
     inline static std::string str_GARDEN_DOOR = "empty";
 
+    static void REMOTE_A_pressed(bool pressed);
+    static void REMOTE_B_pressed(bool pressed);
+    static void REMOTE_C_pressed(bool pressed);
+    static void REMOTE_D_pressed(bool pressed);
+    static void LIGHT_BARRIER_interrupted(bool pressed);
+
 
 private:
 
