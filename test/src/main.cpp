@@ -7,7 +7,7 @@
 #include <SlidingGate/Log/Stream.hpp>
 
 #include <test.hpp>
-
+#include <simulator.hpp>
 
 #include <iostream>
 #include <thread>
@@ -44,7 +44,8 @@ int main(int argc, char *argv[]){
     // Start the motor loop in a separate thread.
     std::thread motor_thread(&Motor::motor_loop);
 
-    //std::thread gate_thread(&GateSimulator::simulation_loop);
+    std::thread gate_thread(&GateSimulator::simulation_loop);
+
     std::thread control_thread(&Control::control_loop);
     
     QApplication a(argc, argv);

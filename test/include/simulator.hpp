@@ -1,4 +1,8 @@
 #include <SlidingGate/Initialize.hpp>
+#include <chrono>
+
+using namespace std::chrono;
+
 namespace SlidingGate {
 /**
  * @brief The GateSimulator class simulates the physical gate movement, and sesnors.
@@ -35,17 +39,6 @@ namespace SlidingGate {
 class GateSimulator {
 public:
     static void simulation_loop();
-    inline static std::string str_PWM = "empty";
-    inline static std::string str_DIRECTION = "empty";
-    inline static std::string str_OPEN_SWITCH = "empty";
-    inline static std::string str_CLOSE_SWITCH = "empty";
-    inline static std::string str_LIGHT_BARRIER = "empty";
-    inline static std::string str_REMOTE_A = "empty";
-    inline static std::string str_REMOTE_B = "empty";
-    inline static std::string str_REMOTE_C = "empty";
-    inline static std::string str_REMOTE_D = "empty";
-    inline static std::string str_LAMP = "empty";
-    inline static std::string str_GARDEN_DOOR = "empty";
 
     static void REMOTE_A_pressed(bool pressed);
     static void REMOTE_B_pressed(bool pressed);
@@ -55,6 +48,13 @@ public:
 
 
 private:
+    struct _Param {
+        static constexpr milliseconds TIME_TO_OPEN = 26000ms; // Time to fully open the gate in seconds
+        static constexpr milliseconds TIME_TO_CLOSE = 26000ms; // Time to fully close the gate in seconds
+        static constexpr milliseconds RANDOM = 10ms; // Random time to simulate the delay in the gate movement
+    };
+    
+
 
 };
 } // namespace SlidingGate

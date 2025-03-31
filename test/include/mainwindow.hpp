@@ -17,15 +17,19 @@ class MainWindow : public QMainWindow
   public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void updateTable();
+    void updateTable(int pin);
+    static MainWindow* s_instance;
     
+  public slots:
+    void updateGateProgress(float position); // Now declared as a slot
+
   private:
     Ui::MainWindow *ui;
     QStandardItemModel* model;
     
     static QString digitalValToString(float value);
     static QString pwmValToString(float value);
-    static MainWindow* s_instance;
+    static QString updateMotorSpeed(float pwm, float direction);
 };
 
 #endif // MAINWINDOW_H

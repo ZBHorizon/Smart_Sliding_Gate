@@ -82,6 +82,8 @@ void IO::digitalWrite(int pin, int value) {
     LOG_INFO() << "digitalWrite: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET
              << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
              << ") set to " << Test_IO::ORANGE << Test_IO::digitalValToString(value) << Test_IO::RESET << ".";
+    if(MainWindow::s_instance)
+        MainWindow::s_instance->updateTable(pin);
 }
 
 /* pwmWrite() */
@@ -110,6 +112,8 @@ void IO::pwmWrite(int pin, int value) {
     LOG_INFO() << "pwmWrite: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET
              << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
              << ") PWM value " << Test_IO::ORANGE << value << Test_IO::RESET << " set.";
+    if(MainWindow::s_instance)
+        MainWindow::s_instance->updateTable(pin);
 }
 
 /* pwmSetMode() */
@@ -267,6 +271,8 @@ void Test_IO::set_pin(int pin, int value){
     Test_IO::pin_states[pin].previous_signal = Test_IO::pin_states[pin].current_signal; // Update previous signal
     Test_IO::pin_states[pin].current_signal = value;
     isr_sim_update(pin); 
+    if(MainWindow::s_instance)
+        MainWindow::s_instance->updateTable(pin);
 }
 
 float Test_IO::read_pin(int pin){
