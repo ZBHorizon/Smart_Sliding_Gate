@@ -1,11 +1,3 @@
-#define WIN32_LEAN_AND_MEAN 
-#include <Windows.h>
-#include <DbgHelp.h>
-#ifdef _WIN32
-#pragma comment(lib, "Dbghelp.lib")
-#endif
-#undef INPUT  // remove Windows' INPUT macro
-
 #include <test.hpp>
 #include <SlidingGate/Log.hpp>
 
@@ -362,20 +354,24 @@ std::string Test_IO::isrModeToString(int mode) {
 }
 
 std::string Test_IO::isrfuntionNameToString(void (*function)(void)) {
-#ifdef _WIN32
-    HANDLE process = GetCurrentProcess();
-    static bool symInitialized = [] {
-        return SymInitialize(GetCurrentProcess(), nullptr, TRUE);
-    }();
-    if (!symInitialized) return "Unknown function";
-    DWORD64 address = reinterpret_cast<DWORD64>(function);
-    char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)] = {};
-    auto symbol = reinterpret_cast<PSYMBOL_INFO>(buffer);
-    symbol->SizeOfStruct = sizeof(SYMBOL_INFO); symbol->MaxNameLen = MAX_SYM_NAME;
-    return SymFromAddr(process, address, nullptr, symbol) ? std::string(symbol->Name) : "Unknown function";
-#else
-    return "Function name not available";
-#endif
+// #ifndef _WIN32
+// #define _WIN32 
+// #include <Windows.h>
+// #include <DbgHelp.h>
+// #pragma comment(lib, "Dbghelp.lib")
+
+//     HANDLE process = GetCurrentProcess();
+//     static bool symInitialized = [] {
+//         return SymInitialize(GetCurrentProcess(), nullptr, TRUE);
+//     }();
+//     if (!symInitialized) return "Unknown function";
+//     DWORD64 address = reinterpret_cast<DWORD64>(function);
+//     char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)] = {};
+//     auto symbol = reinterpret_cast<PSYMBOL_INFO>(buffer);
+//     symbol->SizeOfStruct = sizeof(SYMBOL_INFO); symbol->MaxNameLen = MAX_SYM_NAME;
+//     return SymFromAddr(process, address, nullptr, symbol) ? std::string(symbol->Name) : "Unknown function";
+// #endif
+return "Unknown function";
 }
 
 std::string Test_IO::getPinName(int pin) {

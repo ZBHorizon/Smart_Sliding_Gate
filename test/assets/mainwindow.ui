@@ -62,7 +62,6 @@
     <property name="styleSheet">
      <string notr="true">/* Gesamt-Widget der Progressbar */
 QProgressBar {
-    text-align: center;
     font-size: 16px;
     border: rgba(0, 0, 0, 0.19);
     background-color: rgba(0, 0, 0, 0.19);  /* optional */
@@ -71,8 +70,7 @@ QProgressBar {
 /* Der Fortschritts-Chunk */
 QProgressBar::chunk {
     background-color:rgb(45, 54, 55);
-    width: 10px;         /* minimal chunk width */
-}
+
 }
 </string>
     </property>

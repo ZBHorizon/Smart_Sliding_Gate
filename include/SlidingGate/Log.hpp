@@ -1,15 +1,19 @@
+#pragma once
 #include <cerrno>
 #include <source_location>
 #include <set>
 #include <unordered_map>
 #include <iostream>
 
-#if defined(WIN32)
-#  include <Windows.h>
-#endif
+// #if defined(WIN32)
+// #  include <Windows.h>
+// #undef ERROR
+// #undef INPUT
+// #undef ms
+
+// #endif
 
 
-#undef ERROR
 
 namespace SlidingGate{
 class Log {

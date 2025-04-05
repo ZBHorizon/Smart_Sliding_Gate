@@ -8,6 +8,7 @@
 
 #include <SlidingGate/job.hpp>
 #include <SlidingGate/Motor.hpp>
+#include <SlidingGate/Log.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -125,6 +126,15 @@ bool job::create_job(float target_position) {
     // Step 5: Add a final keyframe to fully stop at the target position.
     _keyframes.push_back({0.0f, target_keyframe.position});
     _current_iter = _keyframes.begin();
+
+    // print _keyframes for debugging in purple color
+    {
+        int keyframeIndex = 1;
+        for (const auto& frame : _keyframes) {
+            LOG_INFO() << "\033[35mKeyframe: " << keyframeIndex++ << ", Position: " << frame.position << "f, Speed: " << frame.speed << "f\033[0m";
+        }
+    }
+
     ready = true;
     Motor::motor_cv.notify_all();
     return true;
