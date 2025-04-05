@@ -138,7 +138,7 @@ QString MainWindow::digitalValToString(float value) {
 }
 
 QString MainWindow::pwmValToString(float value) {
-    return QString::number(value * 100, 'f', 1) + "%";
+    return QString::number(value * 100.0f , 'f', 1) + "%";
 }
 
 QString MainWindow::updateMotorSpeed(float pwm, float direction) {

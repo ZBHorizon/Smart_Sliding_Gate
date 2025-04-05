@@ -66,7 +66,7 @@ float GateSimulator::update_position(float pwm, float direction) {
     float delta = pwm * (_Param::RANDOM.count() + (deviation / 1000.0f)) / static_cast<float>(time_constant);
 
     // Return the new position (accumulated position plus delta).
-    return current_position + delta;
+    return current_position + delta / 100.0f;
 }
 
 void GateSimulator::update_switch_states() {

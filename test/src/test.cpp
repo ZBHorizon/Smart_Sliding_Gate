@@ -98,12 +98,13 @@ void IO::pwmWrite(int pin, int value) {
                   << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
                   << ") exceeds the set PWM range of " << Test_IO::ORANGE << Test_IO::global_PWM::PWM_RANGE << Test_IO::RESET << ".";
     }
-    float converted_value = static_cast<float>(value / Test_IO::global_PWM::PWM_RANGE); 
+    float converted_value = static_cast<float>(value) / static_cast<float>(Test_IO::global_PWM::PWM_RANGE); 
     Test_IO::pin_states[pin].previous_signal = Test_IO::pin_states[pin].current_signal; // Update previous signal
     Test_IO::pin_states[pin].current_signal = converted_value;
     LOG_INFO() << "pwmWrite: Pin " << Test_IO::ORANGE << pin << Test_IO::RESET
              << " (" << Test_IO::ORANGE << Test_IO::getPinName(pin) << Test_IO::RESET
-             << ") PWM value " << Test_IO::ORANGE << value << Test_IO::RESET << " set.";
+             << ") PWM value " << Test_IO::ORANGE << value << Test_IO::RESET
+             << " (" << Test_IO::ORANGE << converted_value * 100.0f << "%" << Test_IO::RESET << ") set.";
     if(MainWindow::s_instance)
         MainWindow::s_instance->updateTable(pin);
 }
@@ -124,7 +125,7 @@ void IO::pwmSetRange(std::uint32_t range) {
         LOG_ERROR() << "Error: PWM range cannot be zero.";
     }
     Test_IO::global_PWM::PWM_RANGE = range;
-    LOG_INFO() << "pwmSetRange: Range " << Test_IO::ORANGE << range << Test_IO::RESET << " set.";
+    LOG_INFO() << "pwmSetRange: Range " << Test_IO::ORANGE << Test_IO::global_PWM::PWM_RANGE << Test_IO::RESET << " set.";
 }
 
 /* pwmSetClock() */
