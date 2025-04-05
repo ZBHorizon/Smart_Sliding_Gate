@@ -59,6 +59,10 @@ public:
 
     inline static std::condition_variable motor_cv; ///< Condition Variable for motor control
 
+
+    inline static milliseconds get_time_to_open() { return _time_to_open; } ///< Getter for time to open
+    inline static milliseconds get_time_to_close() { return _time_to_close; } ///< Getter for time to close
+
 private:
     /**
      * @brief Contains parameters for timing and speed regulation.

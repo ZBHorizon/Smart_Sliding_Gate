@@ -273,7 +273,7 @@ void Motor::motor_loop() {
         } 
         // sleep für 1ms (davor muss der mutex unlocken und danach wieder locken)
         lock.unlock();
-        std::this_thread::sleep_for(10ms);
+        std::this_thread::sleep_for(50ms);
     }
 }
 
@@ -283,7 +283,7 @@ void Motor::motor_loop() {
  */
 bool Motor::update_motor() {
     update_current_position();
-    float speed = job::get_speed(_actual_position);
+    float speed = job::get_speed();
     if (std::isnan(speed)) {
         return false;
     }

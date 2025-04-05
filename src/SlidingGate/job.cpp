@@ -22,7 +22,7 @@
 #include <condition_variable>
 #include <list>
 #include <algorithm>
-
+#include <atomic>
 
 namespace SlidingGate {
 // Definitions for static members
@@ -40,100 +40,52 @@ bool job::ready = false;
  */
 bool job::create_job(float target_position) {
     //std::lock_guard<std::mutex> lock(_job_mutex);
-    keyframe target_keyframe{
-        .speed = 0.0f,
-        .position = target_position
-    };
+    delete_job();
     // Read current speed and position from the motor.
     keyframe start_keyframe { 
         .speed = Motor::read_speed(),
-        .position = Motor::read_position()
+        .timePoint = steady_clock::now()
     };
+    // Determine in which direction the target is.
+    float target_direction = (target_position > Motor::read_position()) ? 1.0f : -1.0f;
 
-    // If the starting speed is below the minimum, assign a minimal speed
-    // in the direction of the target.
-    if (std::abs(start_keyframe.speed) < _MIN_SPEED) {
-        start_keyframe.speed = (target_keyframe.position > start_keyframe.position) ? _MIN_SPEED : -_MIN_SPEED;
-    }
-
+    steady_clock::time_point target_timePoint = start_keyframe.timePoint + position_to_ms(target_position, target_direction);
     // Clear any existing job (_keyframes).
-    delete_job();
+    
+    // Log current Position and time and target position and time.
+    LOG_INFO() << "\033[35mCurrent Position: " << Motor::read_position() * 100.0f << " %\033[0m";
+    LOG_INFO() << "\033[35mTarget Position: " << target_position * 100.0f << " %\033[0m";
+    LOG_INFO() << "\033[35mTarget Time: " 
+               << std::chrono::duration_cast<std::chrono::milliseconds>(target_timePoint - start_keyframe.timePoint).count() 
+               << " ms\033[0m";
 
     // Step 1: Add the starting keyframe representing the current state.
     _keyframes.push_back(start_keyframe);
 
-    // Determine in which direction the target is.
-    float target_direction = (target_keyframe.position > start_keyframe.position) ? 1.0f : -1.0f;
-    
-    // Step 2: If the current speed is above the minimum,
-    // create _keyframes for a controlled deceleration phase.
-    if (std::abs(start_keyframe.speed) > _MIN_SPEED) {
-        // Check if the motor is moving in the opposite direction to the target.
+   
+    // Step 2: If braking is needed.
+    if (std::abs(start_keyframe.speed) > 0.0f) {
+        // Check if moving opposite to the target.
         if (std::signbit(start_keyframe.speed) == std::signbit(-target_direction)) {
-            // Calculate the braking position.
-            float brake_position = start_keyframe.position + _RAMP_DISTANCE * ((start_keyframe.speed > 0.0f) ? 1.0f : -1.0f);
-            // Add a keyframe that sets the speed to minimum in the direction of the target.
-            _keyframes.push_back({target_direction * _MIN_SPEED, brake_position});
-            // Recalculate the target direction based on the new keyframe position.
-            target_direction = (target_keyframe.position > _keyframes.back().position) ? 1.0f : -1.0f;
-            // Add a keyframe to decelerate to negative minimum speed, aiding in smooth transition.
-            _keyframes.push_back({target_direction * -_MIN_SPEED, brake_position});
+            _keyframes.push_back(compute_braking_keyframe());
         }
     }
-    bool skip = false;
+ 
+    // If current speed is below max, add an acceleration keyframe.
+    if (std::abs(_keyframes.back().speed) < _MAX_SPEED) {
+        _keyframes.push_back(compute_acceleration_keyframe(target_timePoint, target_direction));
+    }
 
-    // Acceleration phase: If the speed from the last keyframe is less than full speed.
-    if (std::abs(_keyframes.back().speed) < 1.0f) {
-        // Calculate a planned acceleration distance.
-        float accelDistancePlanned = _RAMP_DISTANCE * (1.0f - std::abs(_keyframes.back().speed));
-        // Calculate available distance to reach the target.
-        float distanceAvailable = std::abs(target_keyframe.position - _keyframes.back().position);
-        float newSpeed = _TARGET_MAX_SPEED;
-    
-        // If the planned acceleration distance plus ramp distance overshoots the available distance.
-        if ((accelDistancePlanned + _RAMP_DISTANCE) > distanceAvailable) {
-            // Calculate a suitable key position.
-            float keyPosition = _keyframes.back().position + accelDistancePlanned * target_direction;
-            // Adjust the acceleration distance to half of the available distance.
-            accelDistancePlanned = distanceAvailable / 2.0f;
-            float accelPosition = _keyframes.back().position + accelDistancePlanned * target_direction;
-            // If the key position did not advance, set speed to maximum.
-            if (keyPosition == _keyframes.back().position) {
-                newSpeed = target_direction * _TARGET_MAX_SPEED;
-            } else {
-                // Interpolate linearly to determine new speed.
-                newSpeed = _keyframes.back().speed + ((target_direction * _TARGET_MAX_SPEED) - _keyframes.back().speed) *
-                           ((accelPosition - _keyframes.back().position) / (keyPosition - _keyframes.back().position));
-            }
-            skip = true;
-            _keyframes.push_back({newSpeed, accelPosition});
-        } else {
-            // Otherwise, simply calculate the acceleration keyframe.
-            float accelPosition = _keyframes.back().position + accelDistancePlanned * target_direction;
-            newSpeed = target_direction * _TARGET_MAX_SPEED;
-            _keyframes.push_back({newSpeed, accelPosition});
-        }
+    // Deceleration phase: add a keyframe _RAMP_TIME_ms before the target time.
+    if (!skip_deceleration_phase) {
+        _keyframes.push_back(compute_deceleration_keyframe(target_timePoint, target_direction));
     }
     
-    // Deceleration phase: If the acceleration phase did not already force a skip.
-    if (!skip) {
-        // Add a keyframe that decelerates before reaching the target.
-        _keyframes.push_back(
-            {target_direction * _TARGET_MAX_SPEED,
-                             target_keyframe.position - _RAMP_DISTANCE * ((_keyframes.back().speed > 0.0f) ? 1.0f : -1.0f)});
-    }
-    
-    // Step 5: Add a final keyframe to fully stop at the target position.
-    _keyframes.push_back({0.0f, target_keyframe.position});
+    // Final keyframe: fully stop at the target time.
+    _keyframes.push_back({0.0f, target_timePoint});
     _current_iter = _keyframes.begin();
 
-    // print _keyframes for debugging in purple color
-    {
-        int keyframeIndex = 1;
-        for (const auto& frame : _keyframes) {
-            LOG_INFO() << "\033[35mKeyframe: " << keyframeIndex++ << ", Position: " << frame.position << "f, Speed: " << frame.speed << "f\033[0m";
-        }
-    }
+    print_keyframes();
 
     ready = true;
     Motor::motor_cv.notify_all();
@@ -157,9 +109,9 @@ void job::stop_motor(){
     float stop_position;
     // Determine the stop position based on current direction.
     if (Motor::read_speed() > 0.0f) {
-        stop_position = Motor::read_position() + _RAMP_DISTANCE;
+        stop_position = Motor::read_position() + 0.02f;
     } else {
-        stop_position = Motor::read_position() - _RAMP_DISTANCE;
+        stop_position = Motor::read_position() - 0.02f;
     }
     create_job(stop_position);
 }
@@ -184,32 +136,104 @@ bool job::is_job_active() {
  * @param position The current position.
  * @return The interpolated speed or signaling_NaN() if invalid.
  */
-float job::get_speed(float position) {
+float job::get_speed() {
+    steady_clock::time_point current_timePoint = steady_clock::now(); 
     // Lock the mutex to safely access the _keyframes.
     //std::lock_guard<std::mutex> lock(_job_mutex);
     auto next_iter = std::next(_current_iter);
 
     // If the current iterator's position exactly matches the request.
-    if (_current_iter->position == position) return _current_iter->speed;
+    auto diff = (next_iter->timePoint >= current_timePoint) 
+        ? next_iter->timePoint - current_timePoint 
+        : current_timePoint - next_iter->timePoint;
+    if (diff < _TOLERANCE) return _current_iter->speed;
     
     // Loop through pairs of _keyframes.
     for (; next_iter != _keyframes.end(); ++_current_iter, ++next_iter) {
-        // If the difference in positions is below tolerance, return speed of the next keyframe.
-        if (std::abs(next_iter->position - position) < _TOLERANCE) return next_iter->speed;
+        // If the current iterator's position exactly matches the request.
+        auto diff = (next_iter->timePoint >= current_timePoint) 
+        ? next_iter->timePoint - current_timePoint 
+        : current_timePoint - next_iter->timePoint;
+        if (diff < _TOLERANCE) return _current_iter->speed;
         // If the current segment does not contain the requested position, continue.
-        if ((_current_iter->position < next_iter->position) == (next_iter->position < position)) continue;
+        if ((_current_iter->timePoint < next_iter->timePoint) == (next_iter->timePoint < current_timePoint)) continue;
         // If the requested position is out-of-range in the segment, return signaling NaN.
-        if ((position < _current_iter->position) == (_current_iter->position < next_iter->position))
+        if ((current_timePoint < _current_iter->timePoint) == (_current_iter->timePoint < next_iter->timePoint))
             return std::numeric_limits<float>::signaling_NaN();
 
         // Interpolate linearly for the requested position.
         float interpolated_speed =
             _current_iter->speed +
             ((next_iter->speed - _current_iter->speed) *
-             (position - _current_iter->position) /
-             (next_iter->position - _current_iter->position));
+             (current_timePoint - _current_iter->timePoint) /
+             (next_iter->timePoint - _current_iter->timePoint));
         return interpolated_speed;
     }
     return std::numeric_limits<float>::signaling_NaN();
 }
+
+milliseconds job::position_to_ms(float position, float direction){
+    // Calculate total duration based on direction.
+    if(direction > 0.0f) {
+        return milliseconds(static_cast<int>(position * Motor::get_time_to_open().count()));
+    } else {
+        return milliseconds(static_cast<int>(position * Motor::get_time_to_close().count()));
+    }
+}
+
+job::keyframe job::compute_braking_keyframe() {
+    steady_clock::time_point brake_timepoint = _keyframes.back().timePoint + _RAMP_TIME_ms;
+    return {0.0f, brake_timepoint};
+}
+
+job::keyframe job::compute_acceleration_keyframe(steady_clock::time_point target_time, float target_direction){
+    float newSpeed = target_direction * _MAX_SPEED;
+    steady_clock::time_point current_time = _keyframes.back().timePoint;
+    // Available time to reach target.
+    milliseconds available_time = std::chrono::duration_cast<milliseconds>(target_time - current_time);
+    // Use the default ramp time unless the available time is shorter.
+
+    milliseconds accel_duration = std::chrono::duration_cast<milliseconds>(_RAMP_TIME_ms * (_MAX_SPEED - _keyframes.back().speed));
+    steady_clock::time_point accel_timepoint = current_time + accel_duration;
+
+    if (accel_duration + _RAMP_TIME_ms > available_time){
+        accel_duration = std::chrono::duration_cast<milliseconds>(available_time) / 2;
+        steady_clock::time_point key_timepoint = current_time + accel_duration;
+        newSpeed = _keyframes.back().speed + ((target_direction * _MAX_SPEED) - _keyframes.back().speed) *
+                               ((accel_timepoint- _keyframes.back().timePoint) / (key_timepoint - _keyframes.back().timePoint));
+        skip_deceleration_phase = true;
+        accel_timepoint = current_time + accel_duration;
+    }
+
+    return {newSpeed, accel_timepoint};
+}
+
+job::keyframe job::compute_deceleration_keyframe(steady_clock::time_point target_time, float target_direction) {
+    steady_clock::time_point decel_timepoint = target_time - _RAMP_TIME_ms;
+    return{target_direction * _MAX_SPEED, decel_timepoint};
+}
+
+void job::print_keyframes() {
+    if (_keyframes.empty()) {
+        LOG_INFO() << "\033[35mNo keyframes to display.\033[0m";
+        return;
+    }
+
+    // Begin with the first keyframe (set as 0ms)
+    auto iter = _keyframes.begin();
+    int keyframeIndex = 1;
+    steady_clock::time_point first_time_point = _keyframes.begin()->timePoint;
+    LOG_INFO() << "\033[35mKeyframe: " << keyframeIndex++
+               << ", Time: " << 0 << " ms, Speed: " << iter->speed *100.0f << " % \033[0m";
+    ++iter;
+
+    // For subsequent keyframes, calculate the time difference (delta) from the previous one.
+    for (; iter != _keyframes.end(); ++iter) {
+        auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(iter->timePoint - first_time_point).count();
+        LOG_INFO() << "\033[35mKeyframe: " << keyframeIndex++
+                   << ", Time: " << delta << " ms, Speed: " << iter->speed * 100.0f << " % \033[0m";
+    }
+}
+
+
 } // namespace SlidingGate

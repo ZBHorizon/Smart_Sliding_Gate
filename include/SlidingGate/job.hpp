@@ -12,6 +12,9 @@
 #include <limits>
 #include <cmath>
 #include <mutex> // For thread safety
+#include <chrono> // For time-related functions
+
+using namespace std::chrono;
 
 namespace SlidingGate {
 
@@ -25,7 +28,7 @@ public:
      */
     struct keyframe {
         float speed;     ///< Speed value at this keyframe.
-        float position;  ///< Position value (e.g., percentage) at this keyframe.
+        steady_clock::time_point timePoint;      ///< Time point of this keyframe.
     };
 
     static bool ready;
@@ -68,23 +71,32 @@ public:
      * between two surrounding _keyframes. If the position is out-of-range,
      * a signaling NaN is returned.
      *
-     * @param position Current position.
      * @return Interpolated speed or signaling_NaN() if the request is invalid.
      */
-    static float get_speed(float position);
+    static float get_speed();
 
 private:
     static std::list<keyframe> _keyframes;  ///< List of _keyframes for the current job.
 
+    inline static bool skip_deceleration_phase = false; ///< Flag to skip deceleration phase.
+
+    //function to calculate the position in % based on opening time in ms and current time
+    static milliseconds position_to_ms(float position, float direction);
+
+    static keyframe compute_braking_keyframe();
+    static keyframe compute_acceleration_keyframe(steady_clock::time_point target_time, float target_direction);
+    static keyframe compute_deceleration_keyframe(steady_clock::time_point target_time, float target_direction);
+
+    static void print_keyframes();
+    
     /**
      * @brief Mutex to protect _keyframes in a multi-threaded environment.
      */
     inline static std::mutex _job_mutex;     
 
-    static constexpr float _TOLERANCE = 0.01f;        ///< Tolerance for position comparisons.
-    static constexpr float _RAMP_DISTANCE = 0.2f;      ///< Distance used for acceleration/deceleration.
-    static constexpr float _TARGET_MAX_SPEED = 0.15f;    ///< Assumed maximum speed magnitude.
-    static constexpr float _MIN_SPEED = 0.05f;          ///< Minimum allowed operating speed.
+    static constexpr milliseconds _RAMP_TIME_ms = 2000ms;      ///< Distance used for acceleration/deceleration.
+    static constexpr float _MAX_SPEED = 1.0f;    ///< Assumed maximum speed magnitude.
+    static constexpr milliseconds _TOLERANCE = 20ms; ///< Tolerance for time comparisons.
     static std::list<keyframe>::iterator _current_iter; ///< Iterator to the current keyframe.
 };
 
