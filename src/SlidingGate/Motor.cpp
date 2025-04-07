@@ -7,6 +7,7 @@
 #include <SlidingGate/INA226.hpp>
 #include <SlidingGate/job.hpp>
 #include <SlidingGate/IO.hpp>
+#include <SlidingGate/Log.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -51,21 +52,22 @@ void Motor::update_states() {
         if (_motor_state != MotorState::None) {
             if (_is_time_to_open_calibrated)_stop_timestamp = steady_clock::now();
             _motor_state = MotorState::None;
-            std::cout << "Motorstate::None" << std::endl;
+            LOG_INFO() << "Motorstate: " << _YELLOW << "Motorstate::None" << _RESET << ".";
         }
     }
     else if (_actual_speed < 0 && _motor_state != MotorState::Closing) {
         _motor_state = MotorState::Closing;
         _start_timestamp = steady_clock::now();
         _start_position_ms = duration_cast<milliseconds>(_time_to_close * _actual_position);
-        std::cout << "Motorstate::Closing" << std::endl;
+        LOG_INFO() << "Motorstate: " << _YELLOW << "Motorstate::Closing" << _RESET << ".";
     }
     else if (_actual_speed > 0 && _motor_state != MotorState::Opening) {
         _motor_state = MotorState::Opening;
         _start_timestamp = steady_clock::now();
         _start_position_ms = duration_cast<milliseconds>(_time_to_open * _actual_position);
-        std::cout << "Motorstate::Opening" << std::endl;
+        LOG_INFO() << "Motorstate: " << _YELLOW << "Motorstate::Opening" << _RESET << ".";
     }
+    
 }
 
 /**
@@ -75,7 +77,7 @@ bool Motor::check_end_switches() {
     if ((_motor_state == MotorState::Opening && !IO::digitalRead(Pin::OPEN_SWITCH)) ||
         (_motor_state == MotorState::Closing && !IO::digitalRead(Pin::CLOSE_SWITCH)) || 
         (_motor_state == MotorState::Closing && !IO::digitalRead(Pin::LIGHT_BARRIER))) {
-        std::cout << "check_end_switches() true" << std::endl;
+        LOG_INFO() << "check_end_switches() : " << _YELLOW << "true" << _RESET << ".";
             return true;
     }
     return false;
@@ -88,10 +90,10 @@ void Motor::light_barrier_isr() {
     std::cout << "ligt barrier" << std::endl;
     // Check if light barrier active when closing
     if (_motor_state == MotorState::Closing) { 
+        LOG_INFO() << "Light Barrier: " << _YELLOW << "Interruptet" << _RESET << " new job to "<< _YELLOW << "100 %" << _RESET << ".";
         set_speed(0.0f);
         job::create_job(1.0f);
     }
-    
 }
 
 /**
@@ -130,7 +132,7 @@ void Motor::check_for_overcurrent(){
  */
 void Motor::update_current_position() {
     // Calculate how the gate is been moving
-    auto now = steady_clock::now();
+    steady_clock::time_point now = steady_clock::now();
     milliseconds current_position_ms = duration_cast<milliseconds>(now - _start_timestamp) + _start_position_ms;
 
     // Calculate current position in percentage 
@@ -138,33 +140,34 @@ void Motor::update_current_position() {
         if (!IO::digitalRead(Pin::OPEN_SWITCH)) {
             _actual_position = 1.0f;
         } else {
-            float position = (static_cast<float>(current_position_ms.count()) * 100.0f) / 
-                             static_cast<float>(_time_to_open.count());
+
+            float position = (static_cast<float>(current_position_ms.count())) / static_cast<float>(_time_to_open.count());
             if ((position > 0.99f) && (_slow_speed == 0.0f)){
-                _slow_speed = _actual_speed;
-                _slow_timestamp = std::chrono::steady_clock::now();
+    	    _slow_speed = _actual_speed;
+            _slow_timestamp = std::chrono::steady_clock::now();
             }
-            _actual_position = (position > 0.99f) ? 0.95f : position;
+            // _actual_position = (position > 0.99f) ? 0.95f : position;
+            _actual_position = position;
         }
     }else if (_motor_state == MotorState::Closing) {
         if (!IO::digitalRead(Pin::CLOSE_SWITCH)) {
             _actual_position = 0.0f;
         } else {
-            float position = 100.0f - (static_cast<float>(current_position_ms.count()) * 100.0f) / 
-                             static_cast<float>(_time_to_close.count());
+            float position = 100.0f - (static_cast<float>(current_position_ms.count())) / static_cast<float>(_time_to_close.count());
             if ((position < 0.01f) && (_slow_speed == 0.0f)){
                 _slow_speed = std::abs(_actual_speed);
                 _slow_timestamp = std::chrono::steady_clock::now();
             }
-            _actual_position = (position < 0.01f) ? 0.05f : position;
+            // _actual_position = (position < 0.01f) ? 0.05f : position;
+            _actual_position = position;
         }
     }
+    LOG_INFO() << "Current Motor Position: " << _YELLOW << _actual_position * 100.0f << " % " << _RESET << ".";
 }
 
 void Motor::move_to_starting_position(float starting_position){
     if (starting_position == 1.0f){
-        std::cout << "open with calibration speed"
-        << std::endl;
+        LOG_INFO() << "open with : " << _YELLOW << -_Param::_CALIBRATION_SPEED *100.0f  << _RESET << " % calibration speed.";
         std::unique_lock<std::mutex> lock(motor_mutex);
         set_speed(-_Param::_CALIBRATION_SPEED); 
         _open_switch_cv.wait(lock, [&] { return open_switch_triggered; });
@@ -172,21 +175,19 @@ void Motor::move_to_starting_position(float starting_position){
         return;
     }
     if (starting_position == 0.0f){
-        std::cout << "close with calibration speed"
-        << std::endl;
+        LOG_INFO() << "closing with : " << _YELLOW << _Param::_CALIBRATION_SPEED *100.0f  << _RESET << " % calibration speed.";
         std::unique_lock<std::mutex> lock(motor_mutex);
         set_speed(_Param::_CALIBRATION_SPEED); 
         _close_switch_cv.wait(lock, [&] { return close_switch_triggered; });
         close_switch_triggered = false; // reset flag after wake-up
         return;
     }
-    std::cout << "position needs to be 0.0f or 1.0f"
-    << std::endl;
-
+    LOG_ERROR() << "position needs to be: " << _YELLOW << "0%"  << _RESET << " or " << _YELLOW << "100%"  << _RESET << "Starting position is: " << _YELLOW << starting_position * 100.0f << _RESET << ".";
 }
 
 
 void Motor::update_times (){
+    LOG_INFO() << "Updated Time to Open: " << _YELLOW << _time_to_open << _RESET << " . Updated Time to Close: " << _YELLOW << _time_to_close << _RESET << ".";
     static std::mutex update_times_mutex;
     if (IO::digitalRead(Pin::CLOSE_SWITCH)){
         if (!_is_time_to_open_calibrated){
@@ -258,10 +259,12 @@ void Motor::motor_loop() {
         // condition variable wait: schlafe, bis job::ready true ist
         std::unique_lock<std::mutex> lock(motor_mutex);
         if (!job::is_job_active()) {
+            LOG_INFO() << "Motor : " << _YELLOW << "sleeping"  << _RESET << " Waiting for wake up.";
             motor_cv.wait(lock, [] { return job::ready; });
             std::thread time_thread(&Motor::update_times);
             time_thread.detach();
             job::ready = false;
+            LOG_INFO() << "Motor : " << _YELLOW << "wake up"  << _RESET << " .";
         }
         // ... weiterer Code im Loop
 
@@ -284,11 +287,17 @@ void Motor::motor_loop() {
 bool Motor::update_motor() {
     update_current_position();
     float speed = job::get_speed();
+    LOG_INFO() << "Motor job get speed : " << _YELLOW << speed * 100.0f << " % " << _RESET << ".";
     if (std::isnan(speed)) {
+        set_speed(0.0f);
         return false;
     }
     update_states();
-    if (check_end_switches()) speed = 0.0f;
+    if (check_end_switches()) {
+        set_speed(0.0f);
+        LOG_INFO() << _YELLOW << "Motor end switch reached. " << _RESET << "Stopping motor.";
+        return false;
+    }
     set_speed(speed);
     return true;
 }
@@ -298,6 +307,7 @@ bool Motor::update_motor() {
  * @param speed Target speed.
  */
 void Motor::set_speed(float speed){
+    LOG_INFO() << "Motor set_speed : " << _YELLOW << speed * 100.0f << " % " << _RESET << ".";
     IO::digitalWrite(Pin::DIRECTION, (speed >= 0 ? LOW : HIGH));
     //set speed 0 - 128 (0-100%)
     uint8_t int_speed = static_cast<uint8_t>(std::abs(speed) * 128);

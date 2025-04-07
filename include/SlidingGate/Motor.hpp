@@ -154,7 +154,9 @@ private:
     inline static bool open_switch_triggered = false;
     inline static bool close_switch_triggered = false;
 
-
+    inline static constexpr const char* _YELLOW = "\033[33m";
+    inline static constexpr const char* _RESET  = "\033[0m";
+    
 
 
 
