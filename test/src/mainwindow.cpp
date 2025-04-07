@@ -4,6 +4,8 @@
 #include <mainwindow.hpp>
 #include "ui_mainwindow.h"
 
+#include <SlidingGate/Log.hpp>
+
 // Add the following to link the meta-object code
 #include <moc_mainwindow.cpp>
 #include <QTimer>
@@ -143,9 +145,8 @@ QString MainWindow::pwmValToString(float value) {
 
 QString MainWindow::updateMotorSpeed(float pwm, float direction) {
     float motorSpeed = pwm * 100.0f;
-    if (direction == 0.0f)
-        motorSpeed = -motorSpeed;
-    return QString("Motorspeed: %1%").arg(motorSpeed, 0, 'f', 1);
+    if (direction == 0.0f) motorSpeed = -motorSpeed;
+    return QString("Motorspeed: %1%").arg(motorSpeed, 0, 'f', 2);
 }
 
 void MainWindow::updateGateProgress(float position) {
@@ -154,6 +155,7 @@ void MainWindow::updateGateProgress(float position) {
         QMetaObject::invokeMethod(this, "updateGateProgress", Qt::QueuedConnection, Q_ARG(float, position));
         return;
     }
-    int value = static_cast<int>(position * 100);
+    ui->gatePosition->setText(QString("Gate Position: %1%").arg(position * 100.0f, 0, 'f', 2));
+    int value = static_cast<int>(position * 100.0f);
     ui->Gate->setValue(value);
 }

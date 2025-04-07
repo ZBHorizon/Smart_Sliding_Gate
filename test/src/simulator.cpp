@@ -4,6 +4,7 @@
 #include <mainwindow.hpp>
 #include <test.hpp>
 #include <SlidingGate/Log.hpp>
+
 #include <chrono>
 #include <thread>
 #include <random>
@@ -72,22 +73,22 @@ float GateSimulator::update_position(float pwm, float direction) {
 void GateSimulator::update_switch_states() {
     // Update OPEN_SWITCH:
     // If the gate is fully open (position == 1.0) and the open switch is off, then turn it on.
-    if (current_position == 1.0f && Test_IO::read_pin(Pin::OPEN_SWITCH) == 0.0f) {
-        Test_IO::set_pin(Pin::OPEN_SWITCH, 1.0f);
+    if (current_position >= 1.0f && Test_IO::read_pin(Pin::OPEN_SWITCH) == 0.0f) {
+        Test_IO::set_pin(Pin::OPEN_SWITCH, 0.0f);
     }
     // If the gate is not fully open and the open switch is on, then turn it off.
-    else if (current_position != 1.0f && Test_IO::read_pin(Pin::OPEN_SWITCH) == 1.0f) {
-        Test_IO::set_pin(Pin::OPEN_SWITCH, 0.0f);
+    else if (current_position < 1.0f && Test_IO::read_pin(Pin::OPEN_SWITCH) == 1.0f) {
+        Test_IO::set_pin(Pin::OPEN_SWITCH, 1.0f);
     }
 
     // Update CLOSE_SWITCH:
     // If the gate is fully closed (position == 0.0) and the close switch is off, then turn it on.
-    if (current_position == 0.0f && Test_IO::read_pin(Pin::CLOSE_SWITCH) == 0.0f) {
-        Test_IO::set_pin(Pin::CLOSE_SWITCH, 1.0f);
+    if (current_position <= 0.0f && Test_IO::read_pin(Pin::CLOSE_SWITCH) == 0.0f) {
+        Test_IO::set_pin(Pin::CLOSE_SWITCH, 0.0f);
     }
     // If the gate is not fully closed and the close switch is on, then turn it off.
-    else if (current_position != 0.0f && Test_IO::read_pin(Pin::CLOSE_SWITCH) == 1.0f) {
-        Test_IO::set_pin(Pin::CLOSE_SWITCH, 0.0f);
+    else if (current_position > 0.0f && Test_IO::read_pin(Pin::CLOSE_SWITCH) == 1.0f) {
+        Test_IO::set_pin(Pin::CLOSE_SWITCH, 1.0f);
     }
 }
 

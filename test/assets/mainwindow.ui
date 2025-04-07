@@ -84,7 +84,7 @@ QProgressBar::chunk {
      <set>Qt::AlignmentFlag::AlignCenter</set>
     </property>
     <property name="textVisible">
-     <bool>true</bool>
+     <bool>false</bool>
     </property>
     <property name="invertedAppearance">
      <bool>true</bool>
@@ -96,11 +96,16 @@ QProgressBar::chunk {
    <widget class="QLabel" name="motorspeed">
     <property name="geometry">
      <rect>
-      <x>390</x>
+      <x>380</x>
       <y>140</y>
-      <width>131</width>
+      <width>211</width>
       <height>20</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>13</pointsize>
+     </font>
     </property>
     <property name="text">
      <string>Motorspeed: %</string>
@@ -250,6 +255,24 @@ QProgressBar::chunk {
     </property>
     <property name="alignment">
      <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="gatePosition">
+    <property name="geometry">
+     <rect>
+      <x>380</x>
+      <y>190</y>
+      <width>221</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>13</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>GatePosition: %</string>
     </property>
    </widget>
   </widget>
