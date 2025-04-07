@@ -89,6 +89,9 @@ private:
 
     static void print_keyframes();
     
+    inline static bool _fully_open = false; ///< Flag to indicate if the gate is fully open.
+    inline static bool _fully_close = false; ///< Flag to indicate if the gate is fully closed.
+
     /**
      * @brief Mutex to protect _keyframes in a multi-threaded environment.
      */
@@ -96,7 +99,9 @@ private:
 
     static constexpr milliseconds _RAMP_TIME_ms = 2000ms;      ///< Distance used for acceleration/deceleration.
     static constexpr float _MAX_SPEED = 1.0f;    ///< Assumed maximum speed magnitude.
+    static constexpr float _MIN_SPEED = 0.1f;    ///< Assumed minmum speed magnitude.
     static constexpr milliseconds _TOLERANCE = 20ms; ///< Tolerance for time comparisons.
+
     static std::list<keyframe>::iterator _current_iter; ///< Iterator to the current keyframe.
 };
 

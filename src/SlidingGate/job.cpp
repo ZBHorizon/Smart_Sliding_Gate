@@ -41,6 +41,18 @@ bool job::ready = false;
 bool job::create_job(float target_position) {
     //std::lock_guard<std::mutex> lock(_job_mutex);
     delete_job();
+
+    if (target_position == 0.0f) {
+        _fully_open = false;
+        _fully_close = true;
+    } else if (target_position == 1.0f) {
+        _fully_open = true;
+        _fully_close = false;
+    } else {
+        _fully_open = false;
+        _fully_close = false;
+    }
+
     // Read current speed and position from the motor.
     keyframe start_keyframe { 
         .speed = Motor::read_speed(),
@@ -53,6 +65,7 @@ bool job::create_job(float target_position) {
     // Clear any existing job (_keyframes).
     
     // Log current Position and time and target position and time.
+    LOG_INFO() << LOG_LINE_50;
     LOG_INFO() << "\033[35mCurrent Position: " << Motor::read_position() * 100.0f << " %\033[0m";
     LOG_INFO() << "\033[35mTarget Position: " << target_position * 100.0f << " %\033[0m";
     LOG_INFO() << "\033[35mTarget Time: " 
@@ -142,33 +155,65 @@ float job::get_speed() {
     //std::lock_guard<std::mutex> lock(_job_mutex);
     auto next_iter = std::next(_current_iter);
 
-    // If the current iterator's position exactly matches the request.
-    auto diff = (next_iter->timePoint >= current_timePoint) 
-        ? next_iter->timePoint - current_timePoint 
-        : current_timePoint - next_iter->timePoint;
-    if (diff < _TOLERANCE) return _current_iter->speed;
+    // // If the current iterator's position exactly matches the request.
+    // auto diff = (next_iter->timePoint >= current_timePoint) 
+    //     ? next_iter->timePoint - current_timePoint 
+    //     : current_timePoint - next_iter->timePoint;
+    // if (diff < _TOLERANCE) {
+    //     LOG_INFO() << "\033[35mIf the current iterator's position exactly matches the request.\033[0m";
+    //     return _current_iter->speed;
+    // }
     
+    if (_fully_open && std::prev(_keyframes.end())->timePoint - std::chrono::milliseconds(static_cast<int>(_RAMP_TIME_ms.count() * 0.1)) < current_timePoint) {
+        // If the current iterator's position is before the request, return minimal open speed.
+        LOG_INFO() << "waiting for " << "\033[35m" << "open endswitch" << "\033[0m" << " with speed " << "\033[35m" << _MIN_SPEED * 100.0f << " % .\033[0m";
+        return _MIN_SPEED;
+    }
+    if (_fully_close && std::prev(_keyframes.end())->timePoint - std::chrono::milliseconds(static_cast<int>(_RAMP_TIME_ms.count() * 0.1)) < current_timePoint) {
+        // If the current iterator's position is before the request, return minimal close speed.
+        LOG_INFO() << "waiting for " << "\033[35m" << "close endswitch" << "\033[0m" << " with speed " << "\033[35m" << -_MIN_SPEED * 100.0f << " % .\033[0m";
+        return -_MIN_SPEED;
+    }
+
+
     // Loop through pairs of _keyframes.
     for (; next_iter != _keyframes.end(); ++_current_iter, ++next_iter) {
-        // If the current iterator's position exactly matches the request.
-        auto diff = (next_iter->timePoint >= current_timePoint) 
-        ? next_iter->timePoint - current_timePoint 
-        : current_timePoint - next_iter->timePoint;
-        if (diff < _TOLERANCE) return _current_iter->speed;
+        // x
+        // auto diff = (next_iter->timePoint >= current_timePoint) 
+        // ? next_iter->timePoint - current_timePoint 
+        // : current_timePoint - next_iter->timePoint;
+        // if (diff < _TOLERANCE) {
+        //     LOG_INFO() << "\033[35mIf the current iterator's position exactly matches the request1.\033[0m";
+        //     return _current_iter->speed;
+        // }
         // If the current segment does not contain the requested position, continue.
         if ((_current_iter->timePoint < next_iter->timePoint) == (next_iter->timePoint < current_timePoint)) continue;
         // If the requested position is out-of-range in the segment, return signaling NaN.
-        if ((current_timePoint < _current_iter->timePoint) == (_current_iter->timePoint < next_iter->timePoint))
+        if ((current_timePoint < _current_iter->timePoint) == (_current_iter->timePoint < next_iter->timePoint)){
+            LOG_INFO() << "\033[35mRequested position is out of range.\033[0m";
             return std::numeric_limits<float>::signaling_NaN();
-
+        }
         // Interpolate linearly for the requested position.
         float interpolated_speed =
             _current_iter->speed +
             ((next_iter->speed - _current_iter->speed) *
              (current_timePoint - _current_iter->timePoint) /
              (next_iter->timePoint - _current_iter->timePoint));
+        // Log the interpolated speed.
+        //LOG_INFO() << "\033[35mInterpolated speed: " << interpolated_speed * 100.0f << " %\033[0m";  
         return interpolated_speed;
     }
+
+    if (_keyframes.begin()->timePoint > current_timePoint) {
+        
+        LOG_INFO() << "\033[35mfirst keyframe is befor now .\033[0m";
+        return std::numeric_limits<float>::signaling_NaN();
+    }
+    if (std::chrono::duration<float, std::milli>(std::prev(_keyframes.end())->timePoint.time_since_epoch()) * 1.1f < std::chrono::duration<float, std::milli>(current_timePoint.time_since_epoch())) {
+        LOG_INFO() << "\033[35mlast keyframe is after now .\033[0m";
+    }
+
+    LOG_INFO() << "\033[35mcouldnt find speed\033[0m";
     return std::numeric_limits<float>::signaling_NaN();
 }
 
@@ -233,6 +278,7 @@ void job::print_keyframes() {
         LOG_INFO() << "\033[35mKeyframe: " << keyframeIndex++
                    << ", Time: " << delta << " ms, Speed: " << iter->speed * 100.0f << " % \033[0m";
     }
+    LOG_INFO() << LOG_LINE_50;
 }
 
 
