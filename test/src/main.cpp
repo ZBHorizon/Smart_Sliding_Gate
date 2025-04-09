@@ -52,5 +52,10 @@ int main(int argc, char *argv[]){
     MainWindow w;
     w.show();
 
-    return a.exec();
+    int ret = a.exec(); // speichere Rückgabewert
+    // Warte auf das saubere Beenden der Threads bevor das Programm endet.
+    motor_thread.join();
+    gate_thread.join();
+    control_thread.join();
+    return ret;
 }

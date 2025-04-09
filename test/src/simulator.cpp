@@ -15,7 +15,7 @@ namespace SlidingGate {
 void GateSimulator::simulation_loop() {
     // Initialize the gate as closed.
     current_position = 0.0f;
-    update_switch_states();
+    update_switch_states(current_position);
     // Main simulation loop.
     while (true) {
         // Read PWM and direction values from the hardware interface.
@@ -35,59 +35,56 @@ void GateSimulator::simulation_loop() {
             current_position = update_position(current_pwm, current_direction);
 
             // Update the open/close switch states based on the current position.
-            update_switch_states();
+            update_switch_states(current_position);
         }
         // Update the gate progress in the main window, if it exists.
         if (MainWindow::s_instance) {
             MainWindow::s_instance->updateGateProgress(current_position);
         }
         // Sleep for 1 millisecond to limit CPU usage.
-        std::this_thread::sleep_for(1ms);
+        std::this_thread::sleep_for(20ms);
     }
 }
 
 float GateSimulator::update_position(float pwm, float direction) {
-    // Select the appropriate time constant:
-    // Use TIME_TO_OPEN for opening (direction == 1.0f) or TIME_TO_CLOSE for closing.
-    auto time_constant = (direction == 1.0f) ? _Param::TIME_TO_OPEN.count() : _Param::TIME_TO_CLOSE.count();
+    using clock = std::chrono::steady_clock;
+    static auto last_time = clock::now();
+    auto current_time = clock::now();
+    std::chrono::duration<float> elapsed = current_time - last_time;
+    last_time = current_time;
 
-    // Maximum random deviation value from the RANDOM parameter.
-    float max_deviation = static_cast<float>(_Param::RANDOM.count());
+    // Convert time constants from milliseconds to seconds.
+    float time_constant = (direction == 1.0f)
+        ? (_Param::TIME_TO_OPEN.count() / 1000.0f)
+        : (_Param::TIME_TO_CLOSE.count() / 1000.0f);
 
-    // Initialize static random number generator for consistent deviation values.
-    static std::random_device rd;
-    static std::mt19937 engine(rd());
-    std::uniform_real_distribution<float> distribution(-max_deviation, max_deviation);
+    // Calculate delta position.
+    float delta = pwm * (elapsed.count() / time_constant);
 
-    // Generate a random deviation value.
-    float deviation = distribution(engine);
+    // Update position based on direction.
+    float new_position = (direction == 0.0f) ? (current_position + delta) : (current_position - delta);
 
-    // Calculate delta: the change in position for this update cycle.
-    // The delta is affected by the PWM value, a random deviation, and normalized by the time constant.
-    float delta = pwm * (_Param::RANDOM.count() + (deviation / 1000.0f)) / static_cast<float>(time_constant);
-
-    // Return the new position (accumulated position plus delta).
-    return current_position + delta / 100.0f;
+    return new_position;
 }
 
-void GateSimulator::update_switch_states() {
+void GateSimulator::update_switch_states(float pos) {
     // Update OPEN_SWITCH:
     // If the gate is fully open (position == 1.0) and the open switch is off, then turn it on.
-    if (current_position >= 1.0f && Test_IO::read_pin(Pin::OPEN_SWITCH) == 0.0f) {
+    if (pos >= 1.0f && Test_IO::read_pin(Pin::OPEN_SWITCH) == 0.0f) {
         Test_IO::set_pin(Pin::OPEN_SWITCH, 0.0f);
     }
     // If the gate is not fully open and the open switch is on, then turn it off.
-    else if (current_position < 1.0f && Test_IO::read_pin(Pin::OPEN_SWITCH) == 1.0f) {
+    else if (pos < 1.0f && Test_IO::read_pin(Pin::OPEN_SWITCH) == 1.0f) {
         Test_IO::set_pin(Pin::OPEN_SWITCH, 1.0f);
     }
 
     // Update CLOSE_SWITCH:
     // If the gate is fully closed (position == 0.0) and the close switch is off, then turn it on.
-    if (current_position <= 0.0f && Test_IO::read_pin(Pin::CLOSE_SWITCH) == 0.0f) {
+    if (pos <= 0.0f && Test_IO::read_pin(Pin::CLOSE_SWITCH) == 0.0f) {
         Test_IO::set_pin(Pin::CLOSE_SWITCH, 0.0f);
     }
     // If the gate is not fully closed and the close switch is on, then turn it off.
-    else if (current_position > 0.0f && Test_IO::read_pin(Pin::CLOSE_SWITCH) == 1.0f) {
+    else if (pos > 0.0f && Test_IO::read_pin(Pin::CLOSE_SWITCH) == 1.0f) {
         Test_IO::set_pin(Pin::CLOSE_SWITCH, 1.0f);
     }
 }

@@ -49,13 +49,13 @@ public:
 
 private:
     struct _Param {
-        static constexpr milliseconds TIME_TO_OPEN = 26000ms; // Time to fully open the gate in seconds
-        static constexpr milliseconds TIME_TO_CLOSE = 26000ms; // Time to fully close the gate in seconds
-        static constexpr microseconds RANDOM = 116us; // Random time to simulate the delay in the gate movement
+        static constexpr milliseconds TIME_TO_OPEN = 26100ms; // Time to fully open the gate in seconds
+        static constexpr milliseconds TIME_TO_CLOSE = 25900ms; // Time to fully close the gate in seconds
+        static constexpr microseconds RANDOM = 1us; // Random time to simulate the delay in the gate movement
     };
     
     static float update_position(float pwm, float direction);
-    static void update_switch_states();
+    static void update_switch_states(float pos);
     inline static float current_position = 0.0f;
     inline static float current_pwm = 0.0f;
     inline static float current_direction = 0.0f;

@@ -6,11 +6,11 @@
 
 #include <SlidingGate/Log.hpp>
 
-// Add the following to link the meta-object code
-#include <moc_mainwindow.cpp>
 #include <QTimer>
 #include <QThread>
+#include <chrono>
 using namespace SlidingGate;
+using namespace std::chrono;
 
 MainWindow* MainWindow::s_instance = nullptr; // Definition des statischen Members
 
@@ -71,19 +71,50 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->motorspeed->setText(MainWindow::updateMotorSpeed(pwm, direction));
 
-    // // Timer einrichten, der alle 50ms updateTable() aufruft:
-    // QTimer* timer = new QTimer(this);
-    // connect(timer, &QTimer::timeout, this, &MainWindow::updateTable);
-    // timer->start(100);
+    // Timer einrichten, der alle 1000ms updateTable() aufruft:
+    QTimer* timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, [this](){
+        check_for_update();
+    });
+    timer->start(200);
 }
 
 MainWindow::~MainWindow()
 {
-    s_instance = nullptr; // Instanz zurücksetzen
+    s_instance = nullptr;
     delete ui;
 }
 
+void MainWindow::check_for_update() {
+    if (!ui || !ui->gatePosition || !ui->Gate) {
+        return;
+    }
+
+    if (_last_call + milliseconds(200) < steady_clock::now()) {
+        return; 
+    }
+    updateTable(Pin::PWM);
+    updateTable(Pin::DIRECTION);
+    updateTable(Pin::OPEN_SWITCH);
+    updateTable(Pin::CLOSE_SWITCH);
+    updateTable(Pin::LIGHT_BARRIER);
+    updateTable(Pin::REMOTE_A);
+    updateTable(Pin::REMOTE_B);
+    updateTable(Pin::REMOTE_C);
+    updateTable(Pin::REMOTE_D);
+    updateTable(Pin::LAMP);
+    updateTable(Pin::GARDEN_DOOR);
+
+}
+
 void MainWindow::updateTable(int pin) {
+    // Wenn bereits ein Update läuft, nicht fortfahren
+    if (_updating.load()) {
+        return;
+    }
+    _updating.store(true, std::memory_order_release);
+    if (!ui) return;
+    _last_call = steady_clock::now();
     switch(pin) {
         case Pin::PWM:
         { // update motorspeed when PWM changes
@@ -131,6 +162,7 @@ void MainWindow::updateTable(int pin) {
         default:
             break;
     }
+    _updating.store(false, std::memory_order_release);
 }
 
 QString MainWindow::digitalValToString(float value) {
@@ -145,17 +177,27 @@ QString MainWindow::pwmValToString(float value) {
 
 QString MainWindow::updateMotorSpeed(float pwm, float direction) {
     float motorSpeed = pwm * 100.0f;
-    if (direction == 0.0f) motorSpeed = -motorSpeed;
+    if (direction == 1.0f) motorSpeed = -motorSpeed;
     return QString("Motorspeed: %1%").arg(motorSpeed, 0, 'f', 2);
 }
 
 void MainWindow::updateGateProgress(float position) {
-    // If we're not in the same thread as the UI, schedule ourselves to run on the UI thread
-    if(QThread::currentThread() != this->thread()){
+    // Zusätzlicher Check und Debug-Log (bei Bedarf, z.B. qDebug)
+    if (!ui) {
+        qWarning("updateGateProgress: ui is null");
+        return;
+    }
+    if (!ui->gatePosition || !ui->Gate) {
+        qWarning("updateGateProgress: gatePosition or Gate is null");
+        return; // Verhindert weiteren Zugriff
+    }
+    if (QThread::currentThread() != this->thread()){
         QMetaObject::invokeMethod(this, "updateGateProgress", Qt::QueuedConnection, Q_ARG(float, position));
         return;
     }
+    // Aktualisiere die UI nur, wenn die Widgets gültig sind
     ui->gatePosition->setText(QString("Gate Position: %1%").arg(position * 100.0f, 0, 'f', 2));
     int value = static_cast<int>(position * 100.0f);
     ui->Gate->setValue(value);
 }
+#include <moc_mainwindow.cpp>
