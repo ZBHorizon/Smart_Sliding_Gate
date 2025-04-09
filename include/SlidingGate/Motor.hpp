@@ -1,6 +1,6 @@
 /**
  * @file Motor.hpp
- * @brief Declaration of the Motor class for controlling the sliding gate.
+ * @brief Declaration of the Motor class which controls the sliding gate mechanism.
  */
 
 #pragma once
@@ -18,42 +18,49 @@ namespace SlidingGate {
 class Motor {
 public:
     /**
-     * @brief Main loop for controlling the motor.
+     * @brief Main control loop for the motor.
+     * 
+     * Continuously handles motor jobs and updates motor position and speed.
      */
     static void motor_loop(); 
 
     /**
-     * @brief Reads the current motor speed.
-     * @return current speed
+     * @brief Retrieves the current speed of the motor.
+     * @return Current motor speed.
      */
     static float read_speed();
 
     /**
-     * @brief Reads the current motor position.
-     * @return current position percentage
+     * @brief Retrieves the current gate position.
+     * @return Gate position as a percentage value (0.0 to 1.0).
      */
     static float read_position();
 
     /**
-     * @brief Checks if the motor is calibrated.
-     * @return true if calibrated
+     * @brief Checks if the motor has been calibrated.
+     * @return true if both open and close calibration procedures have completed.
      */
     static bool is_calibrated();
 
     /**
-     * @brief gets aktivated if the light barrier sensor is triggered.
+     * @brief Interrupt service routine triggered by the light barrier sensor.
      */
     static void light_barrier_isr();
 
+    /**
+     * @brief Moves the gate to the designated starting position for calibration.
+     * 
+     * @param starting_position The target starting position (0.0 for closed, 1.0 for open).
+     */
     static void move_to_starting_position(float starting_position);
 
     /**
-     * @brief gets aktivated if the open end switch is triggered.
+     * @brief Interrupt service routine triggered by the open end switch.
      */
     static void open_switch_isr();
 
     /**
-     * @brief gets aktivated if the close end switch is triggered.
+     * @brief Interrupt service routine triggered by the close end switch.
      */
     static void close_switch_isr();
 
@@ -87,6 +94,7 @@ private:
 
     inline static float _actual_speed = 0.0f;      //< Current speed
     inline static float _actual_position = 0.0f;     //< Current position (percentage)
+    inline static float _start_position = 0.0f;    //< Start position (percentage)
     inline static milliseconds _time_to_open = _Param::_FIRST_TIME_TO_OPEN;  //< Time to fully open (ms)
     inline static milliseconds _time_to_close = _Param::_FIRST_TIME_TO_CLOSE; //< Time to fully close (ms)
 

@@ -1,6 +1,6 @@
 /**
  * @file Motor.cpp
- * @brief Implementierung der Motor-Klasse.
+ * @brief Implementation of the Motor class for controlling the sliding gate.
  */
 #include <SlidingGate/Motor.hpp>
 #include <SlidingGate/Initialize.hpp>
@@ -59,12 +59,14 @@ void Motor::update_states() {
         _motor_state = MotorState::Closing;
         _start_timestamp = steady_clock::now();
         _start_position_ms = duration_cast<milliseconds>(_time_to_close * _actual_position);
+        _start_position = _actual_position;
         LOG_INFO() << "Motorstate: " << _YELLOW << "Motorstate::Closing" << _RESET << ".";
     }
     else if (_actual_speed > 0 && _motor_state != MotorState::Opening) {
         _motor_state = MotorState::Opening;
         _start_timestamp = steady_clock::now();
         _start_position_ms = duration_cast<milliseconds>(_time_to_open * _actual_position);
+        _start_position = _actual_position;
         LOG_INFO() << "Motorstate: " << _YELLOW << "Motorstate::Opening" << _RESET << ".";
     }
     
@@ -127,44 +129,54 @@ void Motor::check_for_overcurrent(){
     }
 }
 
-/*!
- * \brief Updates the current position of the gate.
+/**
+ * @brief Updates the current position of the gate.
+ * 
+ * Calculates the gate's current position based on elapsed time since motion start,
+ * current speed, and the full open/close duration. Logs the new position and the
+ * position change rate in percentage per second.
  */
 void Motor::update_current_position() {
-    // Calculate how the gate is been moving
+    using namespace std::chrono;
     steady_clock::time_point now = steady_clock::now();
-    milliseconds current_position_ms = duration_cast<milliseconds>(now - _start_timestamp) + _start_position_ms;
+    milliseconds elapsed_ms = duration_cast<milliseconds>(now - _start_timestamp);
+    const float elapsed_seconds = static_cast<float>(elapsed_ms.count()) / 1000.0f;
+    const float progress = _actual_speed * elapsed_seconds;
 
-    // Calculate current position in percentage 
     if (_motor_state == MotorState::Opening) {
-        if (!IO::digitalRead(Pin::OPEN_SWITCH)) {
-            _actual_position = 1.0f;
-        } else {
-
-            float position = (static_cast<float>(current_position_ms.count())) / static_cast<float>(_time_to_open.count());
-            if ((position > 0.99f) && (_slow_speed == 0.0f)){
-    	    _slow_speed = _actual_speed;
-            _slow_timestamp = std::chrono::steady_clock::now();
-            }
-            // _actual_position = (position > 0.99f) ? 0.95f : position;
-            _actual_position = position;
-        }
-    }else if (_motor_state == MotorState::Closing) {
-        if (!IO::digitalRead(Pin::CLOSE_SWITCH)) {
-            _actual_position = 0.0f;
-        } else {
-            float position = 100.0f - (static_cast<float>(current_position_ms.count())) / static_cast<float>(_time_to_close.count());
-            if ((position < 0.01f) && (_slow_speed == 0.0f)){
-                _slow_speed = std::abs(_actual_speed);
-                _slow_timestamp = std::chrono::steady_clock::now();
-            }
-            // _actual_position = (position < 0.01f) ? 0.05f : position;
-            _actual_position = position;
-        }
+        const float total_time_open = static_cast<float>(_time_to_open.count()) / 1000.0f;
+        float new_position = _start_position + (progress / total_time_open);
+        if (!IO::digitalRead(Pin::OPEN_SWITCH))
+            new_position = 1.0f;
+        _actual_position = std::min(1.0f, new_position);
     }
-    LOG_INFO() << "Current Motor Position: " << _YELLOW << _actual_position * 100.0f << " % " << _RESET << ".";
+    else if (_motor_state == MotorState::Closing) {
+        const float total_time_close = static_cast<float>(_time_to_close.count()) / 1000.0f;
+        float new_position = _start_position - (progress / total_time_close);
+        if (!IO::digitalRead(Pin::CLOSE_SWITCH))
+            new_position = 0.0f;
+        _actual_position = std::max(0.0f, new_position);
+    }
+    LOG_INFO() << "Current Motor Position: " << _YELLOW 
+               << (_actual_position * 100.0f) << " % " << _RESET << ".";
+    
+    // Calculate and log position change rate in % per second.
+    float position_change_rate = 0.0f;
+    if (elapsed_seconds > 0.0f) {
+        position_change_rate = ((_actual_position - _start_position) / elapsed_seconds) * 100.0f;
+    }
+    LOG_INFO() << "Positionchange in % per second: " << _YELLOW 
+               << position_change_rate << " % " << _RESET << ".";
 }
 
+/**
+ * @brief Moves the gate to the specified starting position.
+ * 
+ * Initiates a calibration move by driving the gate either fully open (100%) or fully closed (0%)
+ * and waiting for the appropriate end switch to trigger.
+ * 
+ * @param starting_position Target starting position; must be 1.0 for open or 0.0 for closed.
+ */
 void Motor::move_to_starting_position(float starting_position){
     if (starting_position == 1.0f){
         LOG_INFO() << "open with : " << _YELLOW << -_Param::_CALIBRATION_SPEED *100.0f  << _RESET << " % calibration speed.";
@@ -185,7 +197,12 @@ void Motor::move_to_starting_position(float starting_position){
     LOG_ERROR() << "position needs to be: " << _YELLOW << "0%"  << _RESET << " or " << _YELLOW << "100%"  << _RESET << "Starting position is: " << _YELLOW << starting_position * 100.0f << _RESET << ".";
 }
 
-
+/**
+ * @brief Updates the time measurements used for calibration.
+ * 
+ * Measures the durations of gate movement, computes an average over recent measurements,
+ * and updates the full open/close time values accordingly.
+ */
 void Motor::update_times (){
     LOG_INFO() << "Updated Time to Open: " << _YELLOW << _time_to_open << _RESET << " . Updated Time to Close: " << _YELLOW << _time_to_close << _RESET << ".";
     static std::mutex update_times_mutex;
@@ -303,18 +320,26 @@ bool Motor::update_motor() {
 }
 
 /**
- * @brief Sets the motor speed and updates its state.
- * @param speed Target speed.
+ * \brief Sets the motor speed and updates its state.
+ * \param speed Target speed.
+ * 
+ * This function also handles speed changes mid-motion by resetting the baseline start time and position,
+ * ensuring that the position calculation remains accurate even when the speed is adjusted during motion.
  */
 void Motor::set_speed(float speed){
     LOG_INFO() << "Motor set_speed : " << _YELLOW << speed * 100.0f << " % " << _RESET << ".";
-    IO::digitalWrite(Pin::DIRECTION, (speed >= 0 ? LOW : HIGH));
-    //set speed 0 - 128 (0-100%)
+    // If motor is already in motion and speed is changing, update the baseline.
+    if (_motor_state != MotorState::None && std::abs(speed - _actual_speed) > 0.001f) {
+        _start_timestamp = std::chrono::steady_clock::now();
+        _start_position = _actual_position;
+    }
+    if (IO::digitalRead(Pin::DIRECTION) != (speed >= 0 ? LOW : HIGH)){
+        IO::digitalWrite(Pin::DIRECTION, (speed >= 0 ? LOW : HIGH));
+    }
     uint8_t int_speed = static_cast<uint8_t>(std::abs(speed) * 128);
     IO::pwmWrite(Pin::PWM, int_speed);
     _actual_speed = speed;
     update_states();
-    
 }
 
 /**
