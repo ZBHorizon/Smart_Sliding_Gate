@@ -1,0 +1,27 @@
+name: CMake on Linux
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake using Presets
+        #! Configure CMake by using the preset defined in cmake-presets.json.
+        #! This preset automatically imports the configuration, toolchain, and cache variables (such as CMAKE_CXX_FLAGS)
+        #! so that no manual environment variables are needed here.
+        run: cmake --preset g++-x86_64-linux-gnu-debug
+
+      - name: Build Target with Presets
+        #! Build the specific target 'SlidingGate' using the configuration parameters from the preset.
+        run: cmake --build --preset g++-x86_64-linux-gnu-debug --target SlidingGate
