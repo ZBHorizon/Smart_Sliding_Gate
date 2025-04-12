@@ -7,22 +7,20 @@ on:
     branches: ["master"] # Trigger on pull requests to master branch
 
 jobs:
-  build_windows:
-    runs-on: windows-latest # Run on the latest Windows runner
+  windows-ninja: # Umbenannt von build_windows
+    runs-on: windows-latest
+    env:
+      CMAKE_CXX_COMPILER: cl
+      CMAKE_CXX_FLAGS: "/MP /EHar /wd6319 /wd4251 /wd4275 /wd26444 /bigobj /source-charset:.28605"
+      CMAKE_CXX_FLAGS_DEBUG: "/MDd /Od /RTC1 /Zi"
+      CMAKE_CXX_FLAGS_RELEASE: "/O2 /fp:fast"
+      CMAKE_SHARED_LINKER_FLAGS_RELEASE: "/LTCG:STATUS"
+      CMAKE_STATIC_LINKER_FLAGS_RELEASE: "/LTCG:STATUS"
+      OPENALDIR: "${{ github.workspace }}/ThirdParty-Win64/openal-1.19.1"
+      SVT_AV1_DIR: "${{ github.workspace }}/ThirdParty-Win64/svt_av1-1.7.0"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      # Install Ninja via Chocolatey to ensure the generator is available.
-      - name: Install Ninja Build Tool on Windows
-        shell: cmd
-        run: choco install ninja -y
-
-      # Setup the Visual Studio environment to use MSVC
-      - name: Setup Visual Studio Environment
-        shell: cmd
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 
       # Define a reusable variable for the build output directory.
       - name: Define Build Output Directory
@@ -35,12 +33,7 @@ jobs:
       - name: Configure CMake
         shell: cmd
         run: |
-          cmake -B "%build_output_dir%" ^
-            -G "Ninja" ^
-            -DCMAKE_CXX_COMPILER=cl ^
-            -DCMAKE_C_COMPILER=cl ^
-            -DCMAKE_BUILD_TYPE=Debug ^
-            -S "%GITHUB_WORKSPACE%"
+          cmake -B "%build_output_dir%" -G "Ninja" -A x64 -T "v143,host=x64"
 
       # Build the IO_Test target in Debug mode.
       - name: Build IO_Test Target
