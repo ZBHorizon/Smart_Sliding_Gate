@@ -1,42 +1,115 @@
-Checks: >
-  -*,
-  readability-identifier-naming
+---
+# https://releases.llvm.org/18.1.0/tools/clang/tools/extra/docs/index.html
+# Version 18
 
-
-HeaderFilterRegex: '^(?!.*[\\/]include[\\/]).*$'
-
-WarningsAsErrors: ''  # Oder 'readability-identifier-naming', falls du Naming-Verstöße als Fehler statt Warnung willst
-
+Checks: #"-*,
+  "bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  hicpp-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  readability-,*
+  -cppcoreguidelines-noexcept-move-operations,
+  -hicpp-noexcept-move,
+  -performance-noexcept-move-constructor"
+  # -cert-dcl37-c,
+  # -cert-dcl51-cpp,
+  # -cppcoreguidelines-non-private-member-variables-in-classes,
+  # -misc-non-private-member-variables-in-classes,
+  # -modernize-use-trailing-return-type,
+  # -performance-enum-size,
+#WarningsAsErrors: '*'
+HeaderFilterRegex: '\.hpp'
+# ExcludeHeaderFilterRegex: '^.*$' # v20 - POSIX ERE
+HeaderFileExtensions: ["hpp"]
+ImplementationFileExtensions: ["cpp"]
+FormatStyle: file
+InheritParentConfig: true
+UseColor: true
+# https://releases.llvm.org/18.1.0/tools/clang/tools/extra/docs/clang-tidy/checks/list.html
 CheckOptions:
-  # ========== Klassen (z.B. Motor) als PascalCase ==========
+  - key: bugprone-argument-comment.StrictMode
+    value: true
+  - key: bugprone-reserved-identifier.AllowedIdentifiers
+    value: "__GeneralName;__RDN"
+
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: 2
+  - key: hicpp-braces-around-statements.ShortStatementLines
+    value: 2
+
+  # https://releases.llvm.org/18.1.0/tools/clang/tools/extra/docs/clang-tidy/checks/readability/identifier-naming.html
+
+  - key: readability-identifier-naming.AggressiveDependentMemberLookup
+    value: true
   - key: readability-identifier-naming.ClassCase
-    value: PascalCase
-
-  # ========== Private struct (z.B. _Param) ==========
-  - key: readability-identifier-naming.PrivateRecordPrefix
-    value: "_"
-  - key: readability-identifier-naming.PrivateRecordCase
-    value: PascalCase
-
-  # ========== Private Member (z.B. _actual_speed) => _ + lower_case ==========
-  - key: readability-identifier-naming.PrivateMemberPrefix
-    value: "_"
-  - key: readability-identifier-naming.PrivateMemberCase
-    value: lower_case
-
-  # ========== Private constexpr Member (z.B. _CALIBRATION_SPEED) => _ + UPPER_CASE ==========
-  - key: readability-identifier-naming.PrivateMemberConstexprPrefix
-    value: "_"
-  - key: readability-identifier-naming.PrivateMemberConstexprCase
+    value: CamelCase
+  - key: readability-identifier-naming.ClassConstantCase
     value: UPPER_CASE
-
-  # ========== Methoden (z.B. set_speed, update_states) => snake_case ==========
-  - key: readability-identifier-naming.MethodCase
+  - key: readability-identifier-naming.ClassMemberPrefix
+    value: _
+  - key: readability-identifier-naming.ClassMemberIgnoredRegexp
+    value: ^on.+$
+  - key: readability-identifier-naming.ConstantCase
     value: snake_case
-
-  # ========== Enums und Enum-Konstanten (z.B. MotorState::Opening, CalibrationStep::move_to_starting_position):
-  #            wir erlauben "any" => keine Warnungen, egal ob PascalCase, snake_case oder UPPER_CASE
+  - key: readability-identifier-naming.ConstantMemberCase
+    value: snake_case
+  - key: readability-identifier-naming.ConstantMemberPrefix
+    value: _
+  - key: readability-identifier-naming.ConstantParameterCase
+    value: camelBacksnake_case
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: UPPER_CASE
   - key: readability-identifier-naming.EnumCase
     value: CamelCase
   - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.FunctionCase
+    value: aNy_CasE
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalFunctionCase
+    value: aNy_CasE
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: aNy_CasE
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
+  - key: readability-identifier-naming.MethodCase
     value: CamelCase
+  - key: readability-identifier-naming.NamespaceCase
+    value: CamelCase
+  - key: readability-identifier-naming.NamespaceIgnoredRegexp
+    value: __.+
+  - key: readability-identifier-naming.ParameterCase
+    value: snake_case
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: _
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: _
+  - key: readability-identifier-naming.StaticConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.TemplateParameterIgnoredRegexp
+    value: expr-type
+  - key: readability-identifier-naming.TypeAliasCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypeTemplateParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypeTemplateParameterIgnoredRegexp
+    value: expr-type
+  - key: readability-identifier-naming.UnionCase
+    value: CamelCase
+  - key: readability-identifier-naming.ValueTemplateParameterCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.VariableCase
+    value: snake_case
+
+  - key: readability-inconsistent-declaration-parameter-name.Strict
+    value: true

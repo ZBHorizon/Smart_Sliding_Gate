@@ -1,11 +1,11 @@
+#include <cstdint>
 #include <functional>
+#include <iostream>
 #include <list>
 #include <mutex>
+#include <ranges>
 #include <shared_mutex>
 #include <utility>
-#include <cstdint>
-#include <iostream> 
-#include <ranges>
 
 namespace Util {
 template<typename... Parameters>
@@ -13,7 +13,9 @@ class Event {
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Public Interface ////////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 public:
+
   /* Constructors / Destructor */
   /*------------------------------------------------------------------------------------------------------------------*/
   Event() = default;
@@ -32,9 +34,9 @@ public:
   /*------------------------------------------------------------------------------------------------------------------*/
   Event<Parameters...>& operator=(const Event<Parameters...>& event) {
     std::scoped_lock _(_sharedMutex, event._sharedMutex);
-    _functions = event._functions;
+    _functions     = event._functions;
     _functionsOnce = event._functionsOnce;
-    _masterID = event._masterID;
+    _masterID      = event._masterID;
     return *this;
   }
   Event<Parameters...>& operator=(Event<Parameters...>&& event) noexcept {
@@ -99,9 +101,7 @@ public:
     _functionsOnce.clear();
     lock.unlock();
 
-    for (const auto& [_, function] : functions | std::views::join) {
-        function(parameters...);
-    }
+    for (const auto& [_, function]: functions | std::views::join) { function(parameters...); }
   }
 
 
@@ -127,7 +127,9 @@ public:
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Private Interface ///////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 private:
+
   /* Variables */
   /*------------------------------------------------------------------------------------------------------------------*/
   mutable std::shared_mutex _sharedMutex;
@@ -137,4 +139,4 @@ private:
 
   uint64_t _masterID = 0;
 };
-}
+} // namespace Util

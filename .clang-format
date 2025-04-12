@@ -1,31 +1,221 @@
 ---
-Language: Cpp
-# Basierend auf 'LLVM' oder 'Google' oder 'Microsoft' – wähle das,
-# was deiner gewünschten Grundformatierung am nächsten kommt.
-BasedOnStyle: LLVM
+# https://releases.llvm.org/16.0.0/tools/clang/docs/ClangFormatStyleOptions.html
+# Version 16
 
-# Einrückung und Tabs
-IndentWidth: 4
-TabWidth: 4
+Language: Cpp
+Standard: c++20
+# BasedOnStyle: Smart_Sliding_Gate
+DisableFormat: false
+
+AccessModifierOffset: -2
+ConstructorInitializerIndentWidth: 2
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+ContinuationIndentWidth: 2
+IndentWidth: 2
+TabWidth: 2
 UseTab: Never
 
-# Klammerstil: "Allman" = geschweifte Klammern in eine neue Zeile
-BreakBeforeBraces: Allman
+AlignAfterOpenBracket: DontAlign
+AlignArrayOfStructures: Right
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+  AlignCompound: true
+  PadOperators: true
+AlignConsecutiveBitFields:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+AlignEscapedNewlines: Left
+AlignOperands: Align
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
 
-# Zusätzliche Optionen (einige Beispiele)
-AccessModifierOffset: -2                # access specifier (public:, private:) 2 nach links
+AllowAllArgumentsOnNextLine: false
+AllowAllConstructorInitializersOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: true
+AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: Empty
-AlignTrailingComments: true
-SpacesInParentheses: false
-SpaceBeforeAssignmentOperators: true
-SpaceAfterCStyleCast: true
-Cpp11BracedListStyle: true
+
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: true
+
+BinPackArguments: true
+BinPackParameters: true
+
+BitFieldColonSpacing: Both
+
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: true
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+#BracedInitializerIndentWidth: 2 #v17
+BreakAfterAttributes: Leave
+BreakArrays: false
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Custom
+BreakBeforeInheritanceComma: false
+BreakBeforeConceptDeclarations: true
+BreakBeforeInlineASMColon: OnlyMultiline
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeComma
+#BreakInheritanceList: BeforeComma
+BreakStringLiterals: false
+
+ColumnLimit: 150
+
+CommentPragmas: "^ IWYU pragma:"
+
+CompactNamespaces: false
+
+Cpp11BracedListStyle: false
+
+DeriveLineEnding: false
+DerivePointerAlignment: false
+
+EmptyLineAfterAccessModifier: Always
+EmptyLineBeforeAccessModifier: Always
+
+ExperimentalAutoDetectBinPacking: false
+
+FixNamespaceComments: true
+
+ForEachMacros: [foreach, Q_FOREACH, BOOST_FOREACH]
+
+#IncludeBlocks: Preserve
+
+IndentAccessModifiers: false
+IndentCaseBlocks: false
+IndentCaseLabels: true
+IndentExternBlock: Indent
+IndentGotoLabels: false
+IndentPPDirectives: AfterHash
+IndentRequiresClause: false
+IndentFunctionDeclarationAfterType: false
+IndentWrappedFunctionNames: false
+
+InsertBraces: false
+InsertNewlineAtEOF: false
+InsertTrailingCommas: None
+IntegerLiteralSeparator: #v16 - buggy with custom suffixes
+  Binary: 8
+  Decimal: 3
+  #   DecimalMinDigits: 5 #v17(?)
+  Hex: 8
+# KeepEmptyLinesAtEOF: false #v17
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: OuterScope
+
+LineEnding: LF
+
+MacroBlockBegin: "^NS_MAP_BEGIN|\
+  NS_TABLE_HEAD$"
+MacroBlockEnd: "^\
+  NS_MAP_END|\
+  NS_TABLE_.*_END$"
+#Macros: #v17
+
+MaxEmptyLinesToKeep: 2
 
 NamespaceIndentation: None
-# Keine Sortierung der #includes (wenn du das wünschst)
-SortIncludes: true
+PPIndentWidth: 2
+PackConstructorInitializers: Never
 
-# Du kannst noch mehr Optionen definieren, siehe clang-format-Doku.
-...
+PenaltyBreakAssignment: 100
+PenaltyBreakBeforeFirstCallParameter: 79
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 100
+PenaltyBreakOpenParenthesis: 0
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyIndentedWhitespace: 0
+PenaltyReturnTypeOnItsOwnLine: 200
+
+PointerAlignment: Left
+QualifierAlignment: Custom
+QualifierOrder:
+  ["inline", "static", "constexpr", "volatile", "restrict", "const", "type"]
+ReferenceAlignment: Left
+
+ReflowComments: false
+RemoveSemicolon: false
+
+RequiresClausePosition: OwnLine
+RequiresExpressionIndentation: OuterScope
+SeparateDefinitionBlocks: Leave
+ShortNamespaceLines: 1
+SortIncludes: true
+IncludeCategories:
+  - Regex: '^<SlidingGate/.*\.hpp>'
+    Priority: 1
+  - Regex: '^<.*\.hpp>'
+    Priority: 2
+  - Regex: "^<.*"
+    Priority: 3
+IncludeBlocks: Regroup
+
+SortUsingDeclarations: false
+
+SpaceAfterCStyleCast: false
+SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: true
+#SpaceBeforeCtorInitializerColon: false
+SpaceBeforeInheritanceColon: false
+# SpaceBeforeJsonColon: false #v17
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: false
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterIfMacros: false
+  AfterOverloadedOperator: false
+  AfterRequiresInClause: true
+  AfterRequiresInExpression: true
+  BeforeNonEmptyParentheses: false
+SpaceBeforeRangeBasedForLoopColon: false
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Never
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: true
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false

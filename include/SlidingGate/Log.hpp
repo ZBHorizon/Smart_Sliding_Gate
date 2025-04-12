@@ -1,9 +1,14 @@
 #pragma once
 #include <cerrno>
-#include <source_location>
-#include <set>
-#include <unordered_map>
 #include <iostream>
+#include <set>
+#include <source_location>
+#include <unordered_map>
+#include <chrono>
+#include <sstream>
+#include <string>
+#include <memory>
+#include <stdexcept>
 
 // #if defined(WIN32)
 // #  include <Windows.h>
@@ -14,13 +19,14 @@
 // #endif
 
 
-
-namespace SlidingGate{
+namespace SlidingGate {
 class Log {
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Public Interface ////////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 public:
+
   /* Types */
   /*------------------------------------------------------------------------------------------------------------------*/
   enum class Level : uint8_t { NONE = 0, ERROR = 1, WARNING = 2, DEBUG = 4, TRACE = 8, INFO = 16, ALL = 31 };
@@ -32,15 +38,16 @@ public:
       , tag(std::move(tag))
       , subTag(std::move(subTag)) {}
 
-    Level level = Level::NONE;
+    Level                                 level     = Level::NONE;
     std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now();
-    std::source_location location;
-    std::string tag;
-    std::string subTag;
+    std::source_location                  location;
+    std::string                           tag;
+    std::string                           subTag;
   };
 
-  class Exception : public std::exception {
+  class Exception: public std::exception {
   public:
+
     Exception(std::string message)
       : _message(std::move(message)) {}
 
@@ -51,6 +58,7 @@ public:
 
   class Handler {
   public:
+
     virtual void Write(const Prefix& prefix, const std::string& str) = 0;
   };
 
@@ -65,14 +73,14 @@ public:
     // ERROR always enables
     , _isEnabled(_prefix.tag.empty() || ContainsActiveTag(_prefix.tag, _prefix.level) || _prefix.level == Level::ERROR) {}
   Log(const Log&) = delete;
-  Log(Log&&) = default;
+  Log(Log&&)      = default;
   ~Log() { Flush(); }
 
 
   /* Operators */
   /*------------------------------------------------------------------------------------------------------------------*/
   Log& operator=(const Log&) = delete;
-  Log& operator=(Log&&) = default;
+  Log& operator=(Log&&)      = default;
 
   template<typename T>
   Log& operator<<(const T& value) {
@@ -89,9 +97,9 @@ public:
 
   /* Controller */
   /*------------------------------------------------------------------------------------------------------------------*/
-  static inline void AddHandler(const std::shared_ptr<Handler>& handler) { GetHandlers().insert(handler); }
-  static inline void RemoveHandler(const std::shared_ptr<Handler>& handler) { GetHandlers().erase(handler); }
-  static inline void ClearHandlers() { GetHandlers().clear(); }
+  inline static void AddHandler(const std::shared_ptr<Handler>& handler) { GetHandlers().insert(handler); }
+  inline static void RemoveHandler(const std::shared_ptr<Handler>& handler) { GetHandlers().erase(handler); }
+  inline static void ClearHandlers() { GetHandlers().clear(); }
 
   Log& EndLine() {
     if (!_isEnabled) return *this;
@@ -108,7 +116,7 @@ public:
     auto str = _ss.str();
     _ss.str("");
 
-    for (const auto& handler : GetHandlers()) {
+    for (const auto& handler: GetHandlers()) {
       try {
         handler->Write(_prefix, str);
       }
@@ -123,7 +131,7 @@ public:
   //! Flushes and throws the logged data
   [[noreturn]] void Throw() {
     _isEnabled = true;
-    auto str = _ss.str();
+    auto str   = _ss.str();
     Flush();
     _isEnabled = false;
     throw Exception(str);
@@ -201,7 +209,9 @@ public:
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Private Interface ///////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 private:
+
   /* Variables */
   /*------------------------------------------------------------------------------------------------------------------*/
   std::stringstream _ss;
@@ -229,14 +239,14 @@ inline const std::shared_ptr<Log>& operator<<(const std::shared_ptr<Log>& log, s
 
 inline bool operator!(Log::Level a) { return !(uint8_t)a; }
 
-inline Log::Level operator&(Log::Level a, Log::Level b) { return Log::Level((uint8_t)a & (uint8_t)b); }
+inline Log::Level  operator&(Log::Level a, Log::Level b) { return Log::Level((uint8_t)a & (uint8_t)b); }
 inline Log::Level& operator&=(Log::Level& a, Log::Level b) { return (a = Log::Level((uint8_t)a & (uint8_t)b)); }
 
-inline Log::Level operator|(Log::Level a, Log::Level b) { return Log::Level((uint8_t)a | (uint8_t)b); }
+inline Log::Level  operator|(Log::Level a, Log::Level b) { return Log::Level((uint8_t)a | (uint8_t)b); }
 inline Log::Level& operator|=(Log::Level& a, Log::Level b) { return (a = Log::Level((uint8_t)a | (uint8_t)b)); }
 
 inline Log::Level operator~(Log::Level a) { return Log::Level(~(uint8_t)a); }
-}
+} // namespace SlidingGate
 
 
 /* Controller */
@@ -247,19 +257,24 @@ inline std::shared_ptr<SlidingGate::Log> LOG_CREATE_DEFAULT(SlidingGate::Log::Le
 }
 
 // Default
-inline auto LOG_ERROR(const std::string& tag = "", const std::string& subTag = "", const std::source_location location = std::source_location::current()) {
+inline auto LOG_ERROR(const std::string& tag = "", const std::string& subTag = "",
+  const std::source_location location = std::source_location::current()) {
   return LOG_CREATE_DEFAULT(SlidingGate::Log::Level::ERROR, tag, subTag, location);
 }
-inline auto LOG_WARNING(const std::string& tag = "", const std::string& subTag = "", const std::source_location location = std::source_location::current()) {
+inline auto LOG_WARNING(const std::string& tag = "", const std::string& subTag = "",
+  const std::source_location location = std::source_location::current()) {
   return LOG_CREATE_DEFAULT(SlidingGate::Log::Level::WARNING, tag, subTag, location);
 }
-inline auto LOG_DEBUG(const std::string& tag = "", const std::string& subTag = "", const std::source_location location = std::source_location::current()) {
+inline auto LOG_DEBUG(const std::string& tag = "", const std::string& subTag = "",
+  const std::source_location location = std::source_location::current()) {
   return LOG_CREATE_DEFAULT(SlidingGate::Log::Level::DEBUG, tag, subTag, location);
 }
-inline auto LOG_TRACE(const std::string& tag = "", const std::string& subTag = "", const std::source_location location = std::source_location::current()) {
+inline auto LOG_TRACE(const std::string& tag = "", const std::string& subTag = "",
+  const std::source_location location = std::source_location::current()) {
   return LOG_CREATE_DEFAULT(SlidingGate::Log::Level::TRACE, tag, subTag, location);
 }
-inline auto LOG_INFO(const std::string& tag = "", const std::string& subTag = "", const std::source_location location = std::source_location::current()) {
+inline auto LOG_INFO(const std::string& tag = "", const std::string& subTag = "",
+  const std::source_location location = std::source_location::current()) {
   return LOG_CREATE_DEFAULT(SlidingGate::Log::Level::INFO, tag, subTag, location);
 }
 
@@ -342,6 +357,6 @@ constexpr std::string_view LOG_LINE_50 { "--------------------------------------
 constexpr std::string_view LOG_LINE_75 { "---------------------------------------------------------------------------" };
 constexpr std::string_view LOG_LINE_100 { "----------------------------------------------------------------------------------------------------" };
 
-constexpr auto LOG_ENDL = &SlidingGate::Log::EndLine;
+constexpr auto LOG_ENDL  = &SlidingGate::Log::EndLine;
 constexpr auto LOG_FLUSH = &SlidingGate::Log::Flush;
 constexpr auto LOG_THROW = &SlidingGate::Log::Throw;

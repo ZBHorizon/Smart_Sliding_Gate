@@ -1,22 +1,24 @@
 #include <SlidingGate/Log.hpp>
 
-#include <regex>
 #include <filesystem>
+#include <regex>
 
-namespace SlidingGate{
-class Log::Stream : public Log::Handler {
+namespace SlidingGate {
+class Log::Stream: public Log::Handler {
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Public Interface ////////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 public:
+
   /* Constructors / Destructor */
   /*------------------------------------------------------------------------------------------------------------------*/
   Stream(std::ostream* ostream, Level enabledLevels = Level::ALL)
     : _ostream(ostream)
     , _enabledLevels(enabledLevels) {}
   Stream(const Stream&) = delete;
-  Stream(Stream&&) = delete;
-  ~Stream() = default;
+  Stream(Stream&&)      = delete;
+  ~Stream()             = default;
 
 
   /* Controller */
@@ -65,13 +67,13 @@ public:
   }
 
   inline void DisablePrefix() {
-    _isColorized = false;
-    _isLevelWritten = false;
-    _isTagWritten = false;
-    _isSubTagWritten = false;
+    _isColorized           = false;
+    _isLevelWritten        = false;
+    _isTagWritten          = false;
+    _isSubTagWritten       = false;
     _isFunctionNameWritten = false;
-    _isLocationWritten = false;
-    _isTimestampWritten = false;
+    _isLocationWritten     = false;
+    _isTimestampWritten    = false;
   }
 
 
@@ -86,15 +88,15 @@ public:
 
   //! Minimal length of filename log segment
   inline size_t GetFillWidthFilename() const { return _fillWidthFilename; }
-  inline void SetFillWidthFilename(size_t value) { _fillWidthFilename = value; }
+  inline void   SetFillWidthFilename(size_t value) { _fillWidthFilename = value; }
 
   //! Minimal length of function name log segment
   inline size_t GetFillWidthFunctionName() const { return _fillWidthFunctionName; }
-  inline void SetFillWidthFunctionName(size_t value) { _fillWidthFunctionName = value; }
+  inline void   SetFillWidthFunctionName(size_t value) { _fillWidthFunctionName = value; }
 
   //! Minimal length of line number log segment
   inline size_t GetFillWidthLineNo() const { return _fillWidthLineNo; }
-  inline void SetFillWidthLineNo(size_t value) { _fillWidthLineNo = value; }
+  inline void   SetFillWidthLineNo(size_t value) { _fillWidthLineNo = value; }
 
   inline bool IsColorized() const { return _isColorized; }
   inline void SetColorized(bool value) { _isColorized = value; }
@@ -124,7 +126,9 @@ public:
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Protected Interface /////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 private:
+
   /* Controller */
   /*------------------------------------------------------------------------------------------------------------------*/
   virtual void Write(const std::string& str) {
@@ -135,7 +139,9 @@ private:
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Private Interface ///////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 private:
+
   /* Miscellaneous */
   /*------------------------------------------------------------------------------------------------------------------*/
   void WriteColorStart(Level level) {
@@ -165,7 +171,7 @@ private:
     std::time_t nowTime = std::chrono::system_clock::to_time_t(timePoint);
 
     const auto nowTM = *std::localtime(&nowTime);
-    char timestamp[80] {};
+    char       timestamp[80] {};
 
     // TODO: Upgrade ASAP
     // http://en.cppreference.com/w/cpp/chrono/c/strftime
@@ -198,8 +204,8 @@ private:
         if (startPosition == std::string::npos) startPosition = view.rfind(' ', endPosition);
 
         if (startPosition != std::string::npos) {
-          _ss << "[" << std::setfill('.') << std::setw((int)_fillWidthFunctionName) << fullFunctionName.substr(startPosition + 1, endPosition - startPosition - 1)
-              << "()]";
+          _ss << "[" << std::setfill('.') << std::setw((int)_fillWidthFunctionName)
+              << fullFunctionName.substr(startPosition + 1, endPosition - startPosition - 1) << "()]";
         }
       }
     }
@@ -210,7 +216,7 @@ private:
   /*------------------------------------------------------------------------------------------------------------------*/
   std::recursive_mutex _recursiveMutex;
 
-  std::ostream* _ostream;
+  std::ostream*     _ostream;
   std::stringstream _ss;
 
   std::unordered_map<std::string, Level> _activeTags;
@@ -223,27 +229,27 @@ private:
   char _fillChar = '.';
 
   //! Minimal length of filename log segment
-  size_t _fillWidthFilename = 20;
+  size_t _fillWidthFilename     = 20;
   //! Minimal length of function name log segment
   size_t _fillWidthFunctionName = 20;
   //! Minimal length of line number log segment
-  size_t _fillWidthLineNo = 4;
+  size_t _fillWidthLineNo       = 4;
 
   //! Colorization
-  bool _isColorized = false;
+  bool _isColorized           = false;
   //! Log level
-  bool _isLevelWritten = true;
+  bool _isLevelWritten        = true;
   //! Log tag
-  bool _isTagWritten = true;
+  bool _isTagWritten          = true;
   //! Log sub tag
-  bool _isSubTagWritten = true;
+  bool _isSubTagWritten       = true;
   //! Log function name
   bool _isFunctionNameWritten = true;
   //! Log filename and line number
-  bool _isLocationWritten = true;
+  bool _isLocationWritten     = true;
   //! Log with timestamp
-  bool _isTimestampWritten = true;
+  bool _isTimestampWritten    = true;
 
   bool _isEnabled = true;
 };
-}
+} // namespace SlidingGate

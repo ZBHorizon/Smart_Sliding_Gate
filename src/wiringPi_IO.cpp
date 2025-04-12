@@ -1,9 +1,10 @@
 #include <SlidingGate/IO.hpp>
+
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 
-namespace SlidingGate{
-    
+namespace SlidingGate {
+
 // IO::struct wiringPiNodeStruct* wiringPiFindNode(int pin) {
 //     return ::wiringPiFindNode(pin);
 // }
@@ -19,9 +20,7 @@ namespace SlidingGate{
 // IO::int wiringPiUserLevelAccess(void) {
 //     return ::wiringPiUserLevelAccess();
 // }
-int IO::wiringPiSetup(void) {
-    return ::wiringPiSetup();
-}
+int  IO::wiringPiSetup(void) { return ::wiringPiSetup(); }
 // IO::int wiringPiSetupSys(void) {
 //     return ::wiringPiSetupSys();
 // }
@@ -43,27 +42,17 @@ int IO::wiringPiSetup(void) {
 // IO::enum WPIPinAlt getPinModeAlt(int pin) {
 //     return ::getPinModeAlt(pin);
 // }
-void IO::pinMode(int pin, int mode) {
-    ::pinMode(pin, mode);
-}
-void IO::pullUpDnControl(int pin, int pud) {
-    ::pullUpDnControl(pin, pud);
-}
-int IO::digitalRead(int pin) {
-    return ::digitalRead(pin);
-}
-void IO::digitalWrite(int pin, int value) {
-    ::digitalWrite(pin, value);
-}
+void IO::pinMode(int pin, int mode) { ::pinMode(pin, mode); }
+void IO::pullUpDnControl(int pin, int pud) { ::pullUpDnControl(pin, pud); }
+int  IO::digitalRead(int pin) { return ::digitalRead(pin); }
+void IO::digitalWrite(int pin, int value) { ::digitalWrite(pin, value); }
 // IO::unsigned int digitalRead8(int pin) {
 //     return ::digitalRead8(pin);
 // }
 // IO::void digitalWrite8(int pin, int value) {
 //     ::digitalWrite8(pin, value);
 // }
-void IO::pwmWrite(int pin, int value) {
-    ::pwmWrite(pin, value);
-}
+void IO::pwmWrite(int pin, int value) { ::pwmWrite(pin, value); }
 // IO::int analogRead(int pin) {
 //     return ::analogRead(pin);
 // }
@@ -109,15 +98,9 @@ void IO::pwmWrite(int pin, int value) {
 // void pwmToneWrite(int pin, int freq) {
 //     ::pwmToneWrite(pin, freq);
 // }
-void IO::pwmSetMode(int mode) {
-    ::pwmSetMode(mode);
-}
-void IO::pwmSetRange(unsigned int range) {
-    ::pwmSetRange(range);
-}
-void IO::pwmSetClock(int divisor) {
-    ::pwmSetClock(divisor);
-}
+void IO::pwmSetMode(int mode) { ::pwmSetMode(mode); }
+void IO::pwmSetRange(unsigned int range) { ::pwmSetRange(range); }
+void IO::pwmSetClock(int divisor) { ::pwmSetClock(divisor); }
 // void gpioClockSet(int pin, int freq) {
 //     ::gpioClockSet(pin, freq);
 // }
@@ -133,18 +116,10 @@ void IO::pwmSetClock(int divisor) {
 // void digitalWriteByte2(int value) {
 //     ::digitalWriteByte2(value);
 // }
-int IO::waitForInterrupt(int pin, int mS) {
-    return ::waitForInterrupt(pin, mS);
-}
-int IO::wiringPiISR(int pin, int mode, void (*function)(void)) {
-    return ::wiringPiISR(pin, mode, function);
-}
-int IO::wiringPiISRStop(int pin) {
-    return ::wiringPiISRStop(pin);
-}
-int IO::waitForInterruptClose(int pin) {
-    return ::waitForInterruptClose(pin);
-}
+int  IO::waitForInterrupt(int pin, int mS) { return ::waitForInterrupt(pin, mS); }
+int  IO::wiringPiISR(int pin, int mode, void (*function)(void)) { return ::wiringPiISR(pin, mode, function); }
+int  IO::wiringPiISRStop(int pin) { return ::wiringPiISRStop(pin); }
+int  IO::waitForInterruptClose(int pin) { return ::waitForInterruptClose(pin); }
 // int piThreadCreate(void* (*fn)(void *)) {
 //     return ::piThreadCreate(fn);
 // }
@@ -157,12 +132,8 @@ int IO::waitForInterruptClose(int pin) {
 // int piHiPri(const int pri) {
 //     return ::piHiPri(pri);
 // }
-void IO::delay(unsigned int howLong) {
-    ::delay(howLong);
-}
-void IO::delayMicroseconds(unsigned int howLong) {
-    ::delayMicroseconds(howLong);
-}
+void IO::delay(unsigned int howLong) { ::delay(howLong); }
+void IO::delayMicroseconds(unsigned int howLong) { ::delayMicroseconds(howLong); }
 // unsigned int millis(void) {
 //     return ::millis();
 // }
@@ -178,9 +149,7 @@ void IO::delayMicroseconds(unsigned int howLong) {
 // int wiringPiI2CReadReg8(int fd, int reg) {
 //     return ::wiringPiI2CReadReg8(fd, reg);
 // }
-int IO::wiringPiI2CReadReg16(int fd, int reg) {
-    return ::wiringPiI2CReadReg16(fd, reg);
-}
+int  IO::wiringPiI2CReadReg16(int fd, int reg) { return ::wiringPiI2CReadReg16(fd, reg); }
 // int wiringPiI2CReadBlockData(int fd, int reg, uint8_t *values, uint8_t size) {
 //     return ::wiringPiI2CReadBlockData(fd, reg, values, size);
 // }
@@ -193,9 +162,7 @@ int IO::wiringPiI2CReadReg16(int fd, int reg) {
 // int wiringPiI2CWriteReg8(int fd, int reg, int data) {
 //     return ::wiringPiI2CWriteReg8(fd, reg, data);
 // }
-int IO::wiringPiI2CWriteReg16(int fd, int reg, int data) {
-    return ::wiringPiI2CWriteReg16(fd, reg, data);
-}
+int  IO::wiringPiI2CWriteReg16(int fd, int reg, int data) { return ::wiringPiI2CWriteReg16(fd, reg, data); }
 // int wiringPiI2CWriteBlockData(int fd, int reg, const uint8_t *values, uint8_t size) {
 //     return ::wiringPiI2CWriteBlockData(fd, reg, values, size);
 // }
@@ -205,7 +172,5 @@ int IO::wiringPiI2CWriteReg16(int fd, int reg, int data) {
 // int wiringPiI2CSetupInterface(const char *device, int devId) {
 //     return ::wiringPiI2CSetupInterface(device, devId);
 // }
-int IO::wiringPiI2CSetup(const int devId) {
-    return ::wiringPiI2CSetup(devId);
-}
-} // namespace SladingGate
+int  IO::wiringPiI2CSetup(const int devId) { return ::wiringPiI2CSetup(devId); }
+} // namespace SlidingGate

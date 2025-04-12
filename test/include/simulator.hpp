@@ -1,4 +1,5 @@
 #include <SlidingGate/Initialize.hpp>
+
 #include <chrono>
 
 using namespace std::chrono;
@@ -38,28 +39,28 @@ namespace SlidingGate {
  */
 class GateSimulator {
 public:
-    static void simulation_loop();
 
-    static void REMOTE_A_pressed(bool pressed);
-    static void REMOTE_B_pressed(bool pressed);
-    static void REMOTE_C_pressed(bool pressed);
-    static void REMOTE_D_pressed(bool pressed);
-    static void LIGHT_BARRIER_interrupted(bool pressed);
+  static void simulation_loop();
+
+  static void REMOTE_A_pressed(bool pressed);
+  static void REMOTE_B_pressed(bool pressed);
+  static void REMOTE_C_pressed(bool pressed);
+  static void REMOTE_D_pressed(bool pressed);
+  static void LIGHT_BARRIER_interrupted(bool pressed);
 
 
 private:
-    struct _Param {
-        static constexpr milliseconds TIME_TO_OPEN = 26100ms; // Time to fully open the gate in seconds
-        static constexpr milliseconds TIME_TO_CLOSE = 25900ms; // Time to fully close the gate in seconds
-        static constexpr microseconds RANDOM = 1us; // Random time to simulate the delay in the gate movement
-    };
-    
-    static float update_position(float pwm, float direction);
-    static void update_switch_states(float pos);
-    inline static float current_position = 0.0f;
-    inline static float current_pwm = 0.0f;
-    inline static float current_direction = 0.0f;
 
+  struct _Param {
+    static constexpr milliseconds TIME_TO_OPEN  = 26'100ms; // Time to fully open the gate in seconds
+    static constexpr milliseconds TIME_TO_CLOSE = 25'900ms; // Time to fully close the gate in seconds
+    static constexpr microseconds RANDOM        = 1us;      // Random time to simulate the delay in the gate movement
+  };
 
+  static float        update_position(float pwm, float direction);
+  static void         update_switch_states(float pos);
+  inline static float current_position  = 0.0f;
+  inline static float current_pwm       = 0.0f;
+  inline static float current_direction = 0.0f;
 };
 } // namespace SlidingGate

@@ -1,12 +1,14 @@
 #pragma once
 #include <SlidingGate/Log/Stream.hpp>
 
-namespace SlidingGate{
-class Log::File : public Log::Stream {
+namespace SlidingGate {
+class Log::File: public Log::Stream {
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Public Interface ////////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 public:
+
   /* Constructors / Destructor */
   /*------------------------------------------------------------------------------------------------------------------*/
   File(std::filesystem::path filePath, Level levels = Level::ALL, std::string description = "", std::ios_base::openmode openMode = std::ios_base::out)
@@ -15,13 +17,13 @@ public:
     , _description(std::move(description))
     , _openMode(openMode) {}
   File(const File&) = delete;
-  File(File&&) = delete;
+  File(File&&)      = delete;
 
 
   /* Operators */
   /*------------------------------------------------------------------------------------------------------------------*/
   File& operator=(const File&) = delete;
-  File& operator=(File&&) = delete;
+  File& operator=(File&&)      = delete;
 
 
   /* Controller */
@@ -42,8 +44,8 @@ public:
     }
 
     std::filesystem::permissions(_filePath,
-      std::filesystem::perms::owner_read | std::filesystem::perms::owner_write | std::filesystem::perms::group_read | std::filesystem::perms::group_write
-        | std::filesystem::perms::others_read | std::filesystem::perms::others_write,
+      std::filesystem::perms::owner_read | std::filesystem::perms::owner_write | std::filesystem::perms::group_read
+        | std::filesystem::perms::group_write | std::filesystem::perms::others_read | std::filesystem::perms::others_write,
       std::filesystem::perm_options::replace);
 
     // Read current file byte count
@@ -65,7 +67,7 @@ public:
     // Write Record Count
 
     _completeRecordCount += _currentRecordCount;
-    _currentRecordCount = 0;
+    _currentRecordCount   = 0;
 
     if (_completeRecordCount > 0) {
       std::array<char, 512> record {};
@@ -93,13 +95,13 @@ public:
   inline const std::filesystem::path& GetFilePath() const { return _filePath; }
 
   [[nodiscard]] inline const std::string& GetDescription() const { return _description; }
-  inline void SetDescription(const std::string& value) { _description = value; }
+  inline void                             SetDescription(const std::string& value) { _description = value; }
 
   inline const std::string& GetHeader() const { return _header; }
-  inline void SetHeader(const std::string& value) { _header = value; }
+  inline void               SetHeader(const std::string& value) { _header = value; }
 
   inline size_t GetMaxByteCount() const { return _maxByteCount; }
-  inline void SetMaxByteCount(size_t value) { _maxByteCount = value; }
+  inline void   SetMaxByteCount(size_t value) { _maxByteCount = value; }
 
   [[nodiscard]] inline bool IsError() const { return (_isError || (_ofstream && _ofstream->bad())); }
   [[nodiscard]] inline bool IsOpen() const { return (_ofstream && _ofstream->is_open()); }
@@ -108,7 +110,9 @@ public:
   /*------------------------------------------------------------------------------------------------------------------*/
   /*//////// Private Interface ///////////////////////////////////////////////////////////////////////////////////////*/
   /*------------------------------------------------------------------------------------------------------------------*/
+
 private:
+
   /* Log::Stream */
   /*------------------------------------------------------------------------------------------------------------------*/
   void Write(const std::string& str) override {
@@ -151,18 +155,18 @@ private:
   /*------------------------------------------------------------------------------------------------------------------*/
   std::shared_ptr<std::ofstream> _ofstream;
 
-  std::filesystem::path _filePath;
+  std::filesystem::path   _filePath;
   std::ios_base::openmode _openMode;
 
   std::string _description;
   std::string _header;
 
   size_t _completeRecordCount = 0;
-  size_t _currentRecordCount = 0;
+  size_t _currentRecordCount  = 0;
 
   size_t _currentByteCount = 0;
-  size_t _maxByteCount = -1;
+  size_t _maxByteCount     = -1;
 
   bool _isError = false;
 };
-}
+} // namespace SlidingGate

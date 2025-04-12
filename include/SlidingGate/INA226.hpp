@@ -137,59 +137,65 @@
 
 namespace SlidingGate {
 
-    /**
+/**
      * @brief INA226 current sensor class.
      */
-    class INA226 {
-    public:
+class INA226 {
+  /*------------------------------------------------------------------------------------------------------------------*/
+  /*//////// Public Interface ////////////////////////////////////////////////////////////////////////////////////////*/
+  /*------------------------------------------------------------------------------------------------------------------*/
 
-        /**
+public:
+
+  /**
          * @brief Initializes and configures the sensor.
          * @return True if the sensor was successfully initialized
          */
-        static bool initialize();
+  static bool initialize();
 
-        /**
+  /**
          * @brief Wakes up the INA226, e.g., Continuous Shunt+Bus
          * 
          * @return true if the register was successfully written
          *         false if an I2C error occurred
          */
-        static bool wake_up();
+  static bool wake_up();
 
-        /**
+  /**
          * @brief Puts the INA226 into Power-Down / Shutdown Mode.
          * 
          * @return true if the register was successfully written
          *         false if an I2C error occurred
          */
-        static bool power_down();
-        /**
+  static bool  power_down();
+  /**
          * @brief Reads the current from the sensor in milliamps (mA).
          * @return The current reading in mA. and NAN if error
          */
-        static float readCurrent_mA();
+  static float readCurrent_mA();
 
-    private:
-        inline static int _i2c_fd = -1;  //!< I2C file descriptor for the INA226 device.
-        //define INA226 register addresses and constant values
-        static constexpr std::int32_t _INA226_I2C_ADDRESS   = 0x40;   //!< I2C address
-        static constexpr std::int32_t _CONFIG_REGISTER      = 0x00;   //!< Configuration register address
-        static constexpr std::int32_t _CURRENT_REGISTER     = 0x04;   //!< Current register address
-        static constexpr std::int32_t _CALIBRATION_REGISTER = 0x05;   //!< Calibration register address
+  /*------------------------------------------------------------------------------------------------------------------*/
+  /*//////// Private Interface ///////////////////////////////////////////////////////////////////////////////////////*/
+  /*------------------------------------------------------------------------------------------------------------------*/
 
-        static constexpr std::int8_t _CONFIG_AVG         = 0b000; 
-        static constexpr std::int8_t _CONFIG_VBUSCT      = 0b100; 
-        static constexpr std::int8_t _CONFIG_VSHCT       = 0b100;
-        static constexpr std::int8_t _CONFIG_MODE        = 0b111;
-        static constexpr std::int16_t _CONFIG_VALUE = (_CONFIG_AVG << 9) | (_CONFIG_VBUSCT << 6) | (_CONFIG_VSHCT << 3) | _CONFIG_MODE; //! configuration
+private:
 
-        static constexpr std::int16_t _CALIBRATION_VALUE    = 2560;   //!< Calibration value for 1 mA/bit with 2 mΩ shunt resistor.
-        static constexpr float _CURRENT_LSB                = 1.0f;   //!< Current LSB in mA/bit.
-        static constexpr float _DESIRED_MAX_CURRENT_A  = 15.0;
+  inline static int             _i2c_fd               = -1; //!< I2C file descriptor for the INA226 device.
+  //define INA226 register addresses and constant values
+  static constexpr std::int32_t _INA226_I2C_ADDRESS   = 0x40; //!< I2C address
+  static constexpr std::int32_t _CONFIG_REGISTER      = 0x00; //!< Configuration register address
+  static constexpr std::int32_t _CURRENT_REGISTER     = 0x04; //!< Current register address
+  static constexpr std::int32_t _CALIBRATION_REGISTER = 0x05; //!< Calibration register address
 
-        
-    };
+  static constexpr std::int8_t  _CONFIG_AVG    = 0b000;
+  static constexpr std::int8_t  _CONFIG_VBUSCT = 0b100;
+  static constexpr std::int8_t  _CONFIG_VSHCT  = 0b100;
+  static constexpr std::int8_t  _CONFIG_MODE   = 0b111;
+  static constexpr std::int16_t _CONFIG_VALUE  = (_CONFIG_AVG << 9) | (_CONFIG_VBUSCT << 6) | (_CONFIG_VSHCT << 3) | _CONFIG_MODE; //! configuration
+
+  static constexpr std::int16_t _CALIBRATION_VALUE     = 2'560; //!< Calibration value for 1 mA/bit with 2 mΩ shunt resistor.
+  static constexpr float        _CURRENT_LSB           = 1.0f;  //!< Current LSB in mA/bit.
+  static constexpr float        _DESIRED_MAX_CURRENT_A = 15.0;
+};
 
 } // namespace SlidingGate
-

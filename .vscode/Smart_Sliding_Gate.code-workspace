@@ -1,84 +1,82 @@
 {
-    "folders": [
-      {
-        "path": "../"
-      },
-      // {
-      //   "path": "../../WiringPi"
-      // }
-    ],
-    "settings": {
-      // ----- C_Cpp --------------------------------------------------------------------------------
-      "C_Cpp.autoAddFileAssociations": false,
-      "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-      //
-      // ----- CMake --------------------------------------------------------------------------------
-      "cmake.buildBeforeRun": true,
-      "cmake.configureOnEdit": false,
-      "cmake.ignoreCMakeListsMissing": true,
-      "cmake.saveBeforeBuild": true,
-      "cmake.useCMakePresets": "always",
-      //
-      // ----- CMake Test Explorer ------------------------------------------------------------------
-      "cmakeExplorer.extraCtestRunArgs": "--extra-verbose",
-      //
-      // ----- Editor -------------------------------------------------------------------------------
+  "folders": [
+    {
+      "path": "../"
+    }
+  ],
+  "settings": {
+    // ----- C_Cpp --------------------------------------------------------------------------------
+    "C_Cpp.autoAddFileAssociations": false,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    //
+    // ----- CMake --------------------------------------------------------------------------------
+    "cmake.buildBeforeRun": true,
+    "cmake.configureOnEdit": false,
+    "cmake.ignoreCMakeListsMissing": true,
+    "cmake.saveBeforeBuild": true,
+    "cmake.useCMakePresets": "always",
+    //
+    // ----- CMake Test Explorer ------------------------------------------------------------------
+    //
+    // ----- Editor -------------------------------------------------------------------------------
     //   "editor.autoClosingBrackets": "never",
     //   "editor.detectIndentation": false,
     //   "editor.fontFamily": "Courier New",
     //   "editor.fontSize": 14,
-    //   "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
     //   "editor.minimap.scale": 2,
     //   "editor.renderWhitespace": "all",
     //   "editor.showFoldingControls": "always",
-    //   "editor.tabSize": 2,
-    //   "editor.useTabStops": false,
-      //
-      // ----- Files --------------------------------------------------------------------------------
-      "files.associations": {
-        "*.cmake": "cmake",
-        "CMakeConfig.txt": "cmake",
-        "CMakeCross*.txt": "cmake",
-        "CMakeFiles*.txt": "cmake",
-        "CMakeLists.txt": "cmake",
-        "*.bat": "bat",
-        "*.h": "c",
-        "*.c": "c",
-        "*.hpp": "cpp",
-        "*.ipp": "cpp",
-        "*.cpp": "cpp",
-        "*.java": "java",
-        "*.json": "json",
-        "*.code-workspace": "json"
-      },
-      "files.encoding": "iso885915",
-      "files.eol": "\n",
-      "files.exclude": {
-        "**/.DS_Store": true,
-        "**/.git": true,
-        "**/.vs": true
-      },
-      "vscord.enabled": false,
-      //intelesense ignore all files in  "../../WiringPi"
-      
-
-
-
+    "editor.tabSize": 2,
+    "editor.useTabStops": false,
+    //
+    // ----- Files --------------------------------------------------------------------------------
+    "files.associations": {
+      "*.cmake": "cmake",
+      "CMakeConfig.txt": "cmake",
+      "CMakeCross*.txt": "cmake",
+      "CMakeFiles*.txt": "cmake",
+      "CMakeLists.txt": "cmake",
+      "*.bat": "bat",
+      "*.h": "c",
+      "*.c": "c",
+      "*.hpp": "cpp",
+      "*.ipp": "cpp",
+      "*.cpp": "cpp",
+      "*.java": "java",
+      "*.json": "json",
+      "*.code-workspace": "json"
+    },
+    "files.encoding": "iso885915",
+    "files.eol": "\n",
+    "files.exclude": {
+      "**/.DS_Store": true,
+      "**/.git": true,
+      "**/.vs": true
+    },
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_style": "file",
+    //intelesense ignore all files in  "../../WiringPi"
     //   "files.trimTrailingWhitespace": true,
-      //
-      // ----- Git ----------------------------------------------------------------------------------
+    //
+    // ----- Git ----------------------------------------------------------------------------------
     //   "git.blame.editorDecoration.enabled": false, // not yet
     //   "git.blame.statusBarItem.enabled": true,
     //   "git.defaultBranchName": "master",
-      //
-      // ----- Test Explorer ------------------------------------------------------------------------
+    //
+    // ----- Test Explorer ------------------------------------------------------------------------
     //   "testExplorer.useNativeTesting": true,
-      //
-      // ----- Workbench ----------------------------------------------------------------------------
+    //
+    // ----- Workbench ----------------------------------------------------------------------------
     //   "workbench.colorCustomizations": {
     //     "tab.activeBackground": "#007700",
     //     "tab.inactiveBackground": "#770000"
     //   },
     //   "workbench.editor.tabSizing": "fit"
-    }
+    //
+    // clang-tidy Konfiguration hinzufügen
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.clangTidy.config": "${workspaceFolder}/.clang-tidy",
+    "C_Cpp.codeAnalysis.runAutomatically": true
   }
+}
