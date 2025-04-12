@@ -77,6 +77,59 @@
     // clang-tidy Konfiguration hinzufügen
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     "C_Cpp.codeAnalysis.clangTidy.config": "${workspaceFolder}/.clang-tidy",
-    "C_Cpp.codeAnalysis.runAutomatically": true
+    "C_Cpp.codeAnalysis.runAutomatically": true,
+    "cmake.options.statusBarVisibility": "hidden",
+    "cmake.options.advanced": {
+      "folder": {
+        "statusBarVisibility": "hidden"
+      },
+      "configure": {
+        "projectStatusVisibility": "visible"
+      },
+      "configurePreset": {
+        "statusBarVisibility": "icon"
+      },
+      "kit": {
+        "statusBarVisibility": "hidden"
+      },
+      "variant": {
+        "statusBarVisibility": "hidden"
+      },
+      "build": {
+        "statusBarVisibility": "inherit",
+        "inheritDefault": "visible",
+        "projectStatusVisibility": "visible"
+      },
+      "buildPreset": {
+        "statusBarVisibility": "visible"
+      },
+      "buildTarget": {
+        "statusBarVisibility": "visible"
+      },
+      "ctest": {
+        "statusBarVisibility": "hidden"
+      },
+      "testPreset": {
+        "statusBarVisibility": "hidden"
+      },
+      "launchTarget": {
+        "statusBarVisibility": "hidden",
+      },
+      "debug": {
+        "statusBarVisibility": "visible"
+      },
+      "launch": {
+        "statusBarVisibility": "visible"
+      },
+      "workflow": {
+        "statusBarVisibility": "hidden"
+      },
+      "workflowPreset": {
+        "statusBarVisibility": "hidden"
+      },
+      "packagePreset": {
+        "statusBarVisibility": "hidden"
+      }
+    }
   }
 }
