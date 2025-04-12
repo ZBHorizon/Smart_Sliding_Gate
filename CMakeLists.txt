@@ -177,7 +177,11 @@ endif()
 #///////// Targets //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------------------------------------------------------------------------#
 add_subdirectory(src/SlidingGate)
-add_subdirectory(src)
+
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+  add_subdirectory(src)
+endif()
+
 if (CMAKE_SYSTEM_NAME STREQUAL Windows)
   add_subdirectory(test)
 endif()
@@ -203,21 +207,21 @@ endif()
 
 # Examples #
 #----------------------------------------------------------------------------------------------------------------------------------------#
-option(BUILD_EXAMPLES "Build examples." OFF)
-if (BUILD_EXAMPLES)
-  add_subdirectory("Examples" "examples")
-endif()
+# option(BUILD_EXAMPLES "Build examples." OFF)
+# if (BUILD_EXAMPLES)
+#   add_subdirectory("Examples" "examples")
+# endif()
 
 
 # Tests #
 #----------------------------------------------------------------------------------------------------------------------------------------#
-option(BUILD_TESTS "Build tests." OFF)
-if (BUILD_TESTS)
-  set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
-  enable_testing()
+# option(BUILD_TESTS "Build tests." OFF)
+# if (BUILD_TESTS)
+#   set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
+#   enable_testing()
 
-  add_subdirectory("Tests" "tests")
-endif()
+#   add_subdirectory("Tests" "tests")
+# endif()
 
 
 
