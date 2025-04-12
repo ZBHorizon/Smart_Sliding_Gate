@@ -1,35 +1,35 @@
-name: CMake on Linux
+# name: CMake on Linux
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+# on:
+#   push:
+#     branches:
+#       - master
+#   pull_request:
+#     branches:
+#       - master
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
 
-      - name: Cache Build Directory
-        uses: actions/cache@v3
-        with:
-          path: build
-          key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
+#       - name: Cache Build Directory
+#         uses: actions/cache@v3
+#         with:
+#           path: build
+#           key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt') }}
+#           restore-keys: |
+#             ${{ runner.os }}-cmake-
 
-      - name: Configure CMake using Presets
-        #! Configure CMake by using the preset defined in cmake-presets.json.
-        run: cmake --preset g++-x86_64-linux-gnu
+#       - name: Configure CMake using Presets
+#         #! Configure CMake by using the preset defined in cmake-presets.json.
+#         run: cmake --preset g++-x86_64-linux-gnu
 
-      - name: Build Target with Presets
-        #! Build the specific target 'SlidingGate' using the configuration parameters from the preset.
-        run: cmake --build --preset g++-x86_64-linux-gnu-debug --config Debug --target SlidingGate
-# This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
+#       - name: Build Target with Presets
+#         #! Build the specific target 'SlidingGate' using the configuration parameters from the preset.
+#         run: cmake --build --preset g++-x86_64-linux-gnu-debug --config Debug --target SlidingGate
+# # This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
+# # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
