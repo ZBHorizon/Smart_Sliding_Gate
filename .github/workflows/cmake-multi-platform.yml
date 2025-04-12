@@ -35,7 +35,7 @@ jobs:
       - name: Configure CMake on Windows
         shell: cmd
         run: |
-          cmake -B "${{ steps.build_vars.outputs.build_output_dir }}" -G "windows-ninja" -A x64 -T "v143,host=x64"
+          cmake -B "${{ steps.build_vars.outputs.build_output_dir }}" -G "Ninja Multi-Config " -A x64 -T "v143,host=x64"
 
       # Build the IO_Test target in Debug mode.
       - name: Build IO_Test Target on Windows
@@ -61,6 +61,7 @@ jobs:
           -DCMAKE_C_COMPILER=gcc \
           -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="${{ steps.build_vars.outputs.build_output_dir }}/bin" \
+
           -S "${{ github.workspace }}"
       - name: Build SlidingGate Target on Linux
         run: cmake --build "${{ steps.build_vars.outputs.build_output_dir }}" --config Debug --target SlidingGate
