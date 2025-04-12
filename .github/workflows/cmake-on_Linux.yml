@@ -16,11 +16,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Cache Build Directory
+        uses: actions/cache@v3
+        with:
+          path: build
+          key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-
+
       - name: Configure CMake using Presets
         #! Configure CMake by using the preset defined in cmake-presets.json.
-        #! This preset automatically imports the configuration, toolchain, and cache variables (such as CMAKE_CXX_FLAGS)
-        #! so that no manual environment variables are needed here.
-        run: cmake --preset g++-x86_64-linux-gnu --config Debug
+        run: cmake --preset g++-x86_64-linux-gnu
 
       - name: Build Target with Presets
         #! Build the specific target 'SlidingGate' using the configuration parameters from the preset.
