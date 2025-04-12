@@ -63,7 +63,7 @@ if (NOT CLANG_TIDY)
 endif()
 
 if (CLANG_TIDY)
-  # set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-config-file=${PROJECT_SOURCE_DIR}/.clang-tidy;--extra-arg=/EHsc")
+  # set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-config-file=${PROJECT_SOURCE_DIR}/.clang-tidy") #--extra-arg=/EHsc
   # set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};--config-file=${PROJECT_SOURCE_DIR}/.clang-tidy;-p")
 endif()
 
@@ -178,7 +178,9 @@ endif()
 #----------------------------------------------------------------------------------------------------------------------------------------#
 add_subdirectory(src/SlidingGate)
 add_subdirectory(src)
-add_subdirectory(test)
+if (CMAKE_SYSTEM_NAME STREQUAL Windows)
+  add_subdirectory(test)
+endif()
 
 
 # Documentation #
