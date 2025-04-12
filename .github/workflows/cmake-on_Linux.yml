@@ -20,8 +20,10 @@ jobs:
         #! Configure CMake by using the preset defined in cmake-presets.json.
         #! This preset automatically imports the configuration, toolchain, and cache variables (such as CMAKE_CXX_FLAGS)
         #! so that no manual environment variables are needed here.
-        run: cmake --preset g++-x86_64-linux-gnu-debug
+        run: cmake --preset g++-x86_64-linux-gnu --config Debug --target SlidingGate
 
       - name: Build Target with Presets
         #! Build the specific target 'SlidingGate' using the configuration parameters from the preset.
-        run: cmake --build --preset g++-x86_64-linux-gnu-debug --target SlidingGate
+        run: cmake --build --preset g++-x86_64-linux-gnu-debug --config Debug --target SlidingGate
+# This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
+# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
