@@ -47,10 +47,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_CXX_MODULE_STD ON)
 
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
+if (CMAKE_SYSTEM_NAME STREQUAL Windows)
+  set(CMAKE_AUTOUIC ON)
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_AUTORCC ON)
+endif()
 
 # clang-tidy #
 #----------------------------------------------------------------------------------------------------------------------------------------#
@@ -120,8 +121,27 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/WiringPi/WiringPi.git
     GIT_TAG master
 )
+
 FetchContent_MakeAvailable(WiringPi)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(STATUS "Building and installing WiringPi...")
+    
+    execute_process(
+        COMMAND chmod +x ./build
+        WORKING_DIRECTORY ${wiringpi_SOURCE_DIR}
+    )
+
+    execute_process(
+        COMMAND ./build
+        WORKING_DIRECTORY ${wiringpi_SOURCE_DIR}
+        RESULT_VARIABLE build_result
+    )
+
+    if(NOT build_result EQUAL 0)
+        message(FATAL_ERROR "WiringPi installation failed with error code ${build_result}")
+    endif()
+endif()
 
 # GNUInstallDirs #
 #----------------------------------------------------------------------------------------------------------------------------------------#

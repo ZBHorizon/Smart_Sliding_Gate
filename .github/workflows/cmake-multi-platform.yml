@@ -1,49 +1,79 @@
-name: CMake on multiple platforms
+name: CMake on Multiple Platforms
 
 on:
   push:
-    branches: ["master"] # Trigger on push to master
+    branches: ["master"] # Trigger on push to master branch
   pull_request:
-    branches: ["master"] # Trigger on pull requests to master
+    branches: ["master"] # Trigger on pull requests to master branch
 
 jobs:
-  build_windows: # Fixed Windows configuration with Ninja and MSVC
-    runs-on: windows-latest # Running on Windows runner
-    # Example command: "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" --build C:/Users/user/source/repos/Smart_Sliding_Gate/Build --config Debug --target IO_Test --
+  build_windows:
+    runs-on: windows-latest # Run on the latest Windows runner
     steps:
-      - uses: actions/checkout@v4 # Checkout the repository
-      - name: Set reusable strings # Set output variables for reuse
-        id: strings
-        shell: bash
-        run: |
-          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-      - name: Configure CMake # Run CMake configuration step
-        run: >
-          cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -G "Ninja"
-          -DCMAKE_CXX_COMPILER=cl
-          -DCMAKE_C_COMPILER=cl
-          -DCMAKE_BUILD_TYPE=Debug
-          -S ${{ github.workspace }}
-      - name: Build # Build the IO_Test target in Debug mode
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Debug --target IO_Test
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-  build_ubuntu: # Fixed Ubuntu configuration with GCC
-    runs-on: ubuntu-latest # Running on Ubuntu runner
-    steps:
-      - uses: actions/checkout@v4 # Checkout the repository
-      - name: Set reusable strings # Set output variables for reuse
-        id: strings
+      # Install Ninja via Chocolatey to ensure the generator is available.
+      - name: Install Ninja Build Tool on Windows
+        shell: cmd
+        run: choco install ninja -y
+
+      # Setup the Visual Studio environment to use MSVC
+      - name: Setup Visual Studio Environment
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+
+      # Define a reusable variable for the build output directory.
+      - name: Define Build Output Directory
+        id: build_vars
         shell: bash
         run: |
-          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-      - name: Configure CMake # Run CMake configuration step
-        run: >
-          cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -G "Ninja"
-          -DCMAKE_CXX_COMPILER=g++
-          -DCMAKE_C_COMPILER=gcc
-          -DCMAKE_BUILD_TYPE=Debug
-          -S ${{ github.workspace }}
-      - name: Build # Build the SlidingGate target in Debug mode
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Debug --target SlidingGate
+          echo "build_output_dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+      # Configure CMake using the Ninja generator and MSVC compilers.
+      - name: Configure CMake
+        shell: cmd
+        run: |
+          cmake -B "%build_output_dir%" ^
+            -G "Ninja" ^
+            -DCMAKE_CXX_COMPILER=cl ^
+            -DCMAKE_C_COMPILER=cl ^
+            -DCMAKE_BUILD_TYPE=Debug ^
+            -S "%GITHUB_WORKSPACE%"
+
+      # Build the IO_Test target in Debug mode.
+      - name: Build IO_Test Target
+        shell: cmd
+        run: cmake --build "%build_output_dir%" --config Debug --target IO_Test
+
+  build_ubuntu:
+    runs-on: ubuntu-latest # Run on the latest Ubuntu runner
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Install required dependencies (Ninja, build-essential, and CMake) via APT.
+      - name: Install Dependencies on Ubuntu
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build build-essential cmake
+
+      # Define a reusable variable for the build output directory.
+      - name: Define Build Output Directory
+        id: build_vars
+        run: |
+          echo "build_output_dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+      # Configure CMake using the Ninja generator with GCC compilers.
+      - name: Configure CMake
+        run: cmake -B "${{ steps.build_vars.outputs.build_output_dir }}" \
+          -G "Ninja" \
+          -DCMAKE_CXX_COMPILER=g++ \
+          -DCMAKE_C_COMPILER=gcc \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -S "${{ github.workspace }}"
+
+      # Build the SlidingGate target in Debug mode.
+      - name: Build SlidingGate Target
+        run: cmake --build "${{ steps.build_vars.outputs.build_output_dir }}" --config Debug --target SlidingGate
